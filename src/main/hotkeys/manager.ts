@@ -6,7 +6,7 @@ import { globalShortcut, BrowserWindow } from 'electron'
 import type { DatabaseWrapper } from '../../services/db/database'
 import { DEFAULT_HOTKEY_BINDINGS, type HotkeyDefinition } from './defaults'
 import { readClipboardSelection } from '../clipboard/reader'
-import { writeToClipboard } from '../clipboard/writer'
+import { writeToClipboard, writeAndPaste } from '../clipboard/writer'
 import { PromptEngine } from '../../services/prompt/engine'
 import { IPC_CHANNELS } from '../../shared/constants'
 import type { EnhanceMode } from '../../shared/types'
@@ -27,6 +27,9 @@ export class HotkeyManager {
    * Register all default hotkeys
    */
   registerAll(): void {
+    // Unregister first to prevent duplicate registrations or leak old keys
+    this.unregisterAll()
+
     // Load custom bindings from DB, fallback to defaults
     const bindings = this.loadBindings()
 
@@ -42,12 +45,13 @@ export class HotkeyManager {
    */
   private register(binding: HotkeyDefinition): void {
     try {
-      const success = globalShortcut.register(binding.accelerator, () => {
+      const accelerator = binding.accelerator.replace(/Ctrl/g, 'CommandOrControl')
+      const success = globalShortcut.register(accelerator, () => {
         this.handleTrigger(binding)
       })
 
       if (success) {
-        this.registeredShortcuts.push(binding.accelerator)
+        this.registeredShortcuts.push(accelerator)
       } else {
         console.warn(`[Hotkeys] Failed to register: ${binding.accelerator} (conflict?)`)
       }
@@ -83,8 +87,15 @@ export class HotkeyManager {
       const mode = binding.mode || ('enhance' as EnhanceMode)
       const result = await this.engine.enhance(selectedText, mode)
 
-      // Step 3: Write result to clipboard
-      await writeToClipboard(result.text)
+      // Step 3: Write result to clipboard and optionally paste
+      const row = this.db.prepare("SELECT value FROM settings WHERE key = 'clipboard_auto_paste'").get() as { value: string } | undefined
+      const autoPaste = row?.value === 'true'
+      
+      if (autoPaste) {
+        await writeAndPaste(result.text)
+      } else {
+        await writeToClipboard(result.text)
+      }
 
       // Step 4: Send result to renderer for display
       this.mainWindow.webContents.send(IPC_CHANNELS.ENHANCE_RESULT, {

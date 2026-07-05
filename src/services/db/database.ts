@@ -226,6 +226,22 @@ export async function initDatabaseAsync(): Promise<DatabaseWrapper> {
 
   // Run migrations
   runMigrations(wrapper)
+  
+  // Patch old legacy groq models
+  wrapper.prepare(`
+    UPDATE providers 
+    SET default_model = 'llama-3.1-8b-instant' 
+    WHERE name = 'groq' 
+    AND (default_model = 'llama-3.1-70b-versatile' OR default_model = 'mixtral-8x7b-32768')
+  `).run()
+
+  // Patch ollama localhost to 127.0.0.1 to avoid IPv6 issues on Windows
+  wrapper.prepare(`
+    UPDATE providers 
+    SET base_url = 'http://127.0.0.1:11434' 
+    WHERE name = 'ollama' 
+    AND base_url = 'http://localhost:11434'
+  `).run()
 
   // Cleanup old data
   cleanupOldHistory(wrapper)

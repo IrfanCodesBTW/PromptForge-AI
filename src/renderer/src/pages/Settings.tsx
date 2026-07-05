@@ -95,16 +95,15 @@ export function Settings(): JSX.Element {
           ))}
         </nav>
 
-        {/* Content */}
         <div className="flex-1 space-y-lg">
           {activeSection === 'general' && (
             <GeneralSettings settings={settings} onSave={saveSetting} />
           )}
           {activeSection === 'providers' && (
-            <ProviderSettings providers={providers} invoke={invoke} onReload={loadProviders} />
+            <ProviderSettings settings={settings} providers={providers} invoke={invoke} onReload={loadProviders} />
           )}
           {activeSection === 'hotkeys' && (
-            <HotkeySettings hotkeys={hotkeys} />
+            <HotkeySettings hotkeys={hotkeys} onReload={loadHotkeys} invoke={invoke} />
           )}
           {activeSection === 'appearance' && (
             <AppearanceSettings settings={settings} onSave={saveSetting} />
@@ -139,16 +138,6 @@ function GeneralSettings({
           <option value="groq">Groq (Cloud)</option>
           <option value="openai">OpenAI (Cloud)</option>
         </select>
-      </SettingsCard>
-
-      <SettingsCard title="Default Model" description="Model to use with the selected provider">
-        <input
-          type="text"
-          value={settings.defaultModel || 'llama3.1'}
-          onChange={(e) => onSave('defaultModel', e.target.value)}
-          className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-          placeholder="e.g., llama3.1, gpt-4o"
-        />
       </SettingsCard>
 
       <SettingsCard title="Temperature" description="Controls randomness (0.0 = deterministic, 2.0 = creative)">
@@ -191,17 +180,41 @@ function GeneralSettings({
 }
 
 function ProviderSettings({
+  settings,
   providers,
   invoke,
   onReload
 }: {
+  settings: Record<string, string>
   providers: unknown[]
   invoke: ReturnType<typeof useInvoke>
   onReload: () => void
 }) {
   const [apiKey, setApiKey] = useState('')
-  const [selectedProvider, setSelectedProvider] = useState('groq')
+  const [selectedProvider, setSelectedProvider] = useState(settings.defaultProvider || 'groq')
   const [testing, setTesting] = useState(false)
+  const [models, setModels] = useState<string[]>([])
+  const [selectedModel, setSelectedModel] = useState('')
+  const [loadingModels, setLoadingModels] = useState(false)
+
+  // Fetch models whenever provider changes
+  useEffect(() => {
+    const provList = providers as { name: string; default_model: string }[]
+    const provInfo = provList.find(p => p.name === selectedProvider)
+    
+    setLoadingModels(true)
+    invoke(IPC_CHANNELS.PROVIDER_MODELS, { provider: selectedProvider }).then((res) => {
+      const m = res as string[]
+      setModels(m)
+      if (provInfo?.default_model && m.includes(provInfo.default_model)) {
+        setSelectedModel(provInfo.default_model)
+      } else if (m.length > 0) {
+        setSelectedModel(m[0])
+      }
+    }).finally(() => {
+      setLoadingModels(false)
+    })
+  }, [selectedProvider, providers, invoke])
 
   const testProvider = async () => {
     setTesting(true)
@@ -221,6 +234,19 @@ function ProviderSettings({
     }
     setTesting(false)
   }
+  const saveProvider = async () => {
+    try {
+      await invoke(IPC_CHANNELS.PROVIDER_UPDATE, {
+        provider: selectedProvider,
+        apiKey: apiKey || undefined,
+        model: selectedModel || undefined
+      })
+      showToast({ type: 'success', title: 'Saved', message: 'Provider updated successfully' })
+      onReload()
+    } catch (e) {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to save provider' })
+    }
+  }
 
   return (
     <div className="space-y-lg">
@@ -231,18 +257,33 @@ function ProviderSettings({
             onChange={(e) => setSelectedProvider(e.target.value)}
             className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
           >
+            <option value="ollama">Ollama (Local)</option>
             <option value="groq">Groq</option>
             <option value="openai">OpenAI</option>
             <option value="openrouter">OpenRouter</option>
           </select>
 
-          <input
-            type="password"
-            placeholder="API Key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+          {selectedProvider !== 'ollama' && (
+            <input
+              type="password"
+              placeholder="API Key (Leave blank to keep existing)"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+            />
+          )}
+
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
             className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
-          />
+            disabled={loadingModels}
+          >
+            {loadingModels && <option value="">Loading models...</option>}
+            {!loadingModels && models.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
 
           <div className="flex gap-sm">
             <button
@@ -254,6 +295,7 @@ function ProviderSettings({
               {testing ? 'Testing...' : 'Test Connection'}
             </button>
             <button
+              onClick={saveProvider}
               className="flex items-center gap-xs px-md py-sm bg-primary rounded-md text-sm text-white hover:bg-primary-hover transition-colors"
             >
               <Save size={14} />
@@ -284,18 +326,110 @@ function ProviderSettings({
   )
 }
 
-function HotkeySettings({ hotkeys }: { hotkeys: unknown[] }) {
+function HotkeySettings({
+  hotkeys,
+  onReload,
+  invoke
+}: {
+  hotkeys: unknown[]
+  onReload: () => void
+  invoke: ReturnType<typeof useInvoke>
+}) {
+  const [recordingId, setRecordingId] = useState<string | null>(null)
+
+  const startRecording = (id: string) => {
+    setRecordingId(id)
+  }
+
+  const cancelRecording = () => {
+    setRecordingId(null)
+  }
+
+  const handleKeyDown = async (e: React.KeyboardEvent, hk: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.key === 'Escape') {
+      cancelRecording()
+      return
+    }
+
+    const modifiers: string[] = []
+    if (e.ctrlKey || e.metaKey) modifiers.push('Ctrl')
+    if (e.shiftKey) modifiers.push('Shift')
+    if (e.altKey) modifiers.push('Alt')
+
+    const key = e.key
+    const isModifier = ['Control', 'Shift', 'Alt', 'Meta'].includes(key)
+    if (!isModifier && modifiers.length > 0) {
+      let keyStr = key.toUpperCase()
+      if (key === 'ArrowUp') keyStr = 'Up'
+      if (key === 'ArrowDown') keyStr = 'Down'
+      if (key === 'ArrowLeft') keyStr = 'Left'
+      if (key === 'ArrowRight') keyStr = 'Right'
+      if (key === ' ') keyStr = 'Space'
+
+      const newBinding = [...modifiers, keyStr].join('+')
+      
+      try {
+        await invoke(IPC_CHANNELS.HOTKEY_UPDATE, {
+          id: hk.id,
+          keybinding: newBinding,
+          is_active: hk.is_active
+        })
+        showToast({ type: 'success', title: 'Hotkey Updated', message: `Registered ${newBinding} for ${hk.action}` })
+        onReload()
+      } catch {
+        showToast({ type: 'error', title: 'Error', message: 'Failed to update hotkey' })
+      }
+      setRecordingId(null)
+    }
+  }
+
+  const toggleHotkey = async (hk: any) => {
+    try {
+      await invoke(IPC_CHANNELS.HOTKEY_UPDATE, {
+        id: hk.id,
+        keybinding: hk.keybinding,
+        is_active: hk.is_active ? 0 : 1
+      })
+      onReload()
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to update hotkey' })
+    }
+  }
+
   return (
-    <SettingsCard title="Global Hotkeys" description="Keyboard shortcuts for enhancement modes">
-      <div className="space-y-sm">
-        {(hotkeys as { action: string; keybinding: string; is_active: number }[]).map((hk) => (
-          <div key={hk.action} className="flex items-center justify-between py-xs">
-            <span className="text-sm text-text-primary capitalize">{hk.action}</span>
-            <kbd className="px-sm py-xs bg-surface rounded text-xs text-text-secondary font-mono border border-border">
-              {hk.keybinding}
-            </kbd>
-          </div>
-        ))}
+    <SettingsCard title="Global Hotkeys" description="Keyboard shortcuts for enhancement modes. Click the hotkey box to record a new shortcut.">
+      <div className="space-y-md">
+        {(hotkeys as { id: string; action: string; keybinding: string; is_active: number }[]).map((hk) => {
+          const isRecording = recordingId === hk.id
+          return (
+            <div key={hk.action} className="flex items-center justify-between p-md bg-surface border border-border rounded-lg">
+              <div>
+                <span className="text-sm font-medium text-text-primary capitalize block">{hk.action}</span>
+                <span className="text-xs text-text-muted">Trigger the {hk.action} prompt template</span>
+              </div>
+              <div className="flex items-center gap-sm">
+                <button
+                  onClick={() => isRecording ? cancelRecording() : startRecording(hk.id)}
+                  onKeyDown={(e) => isRecording && handleKeyDown(e, hk)}
+                  className={`px-md py-sm rounded-md text-xs font-mono border transition-all min-w-[120px] text-center ${
+                    isRecording 
+                      ? 'bg-primary border-primary text-white animate-pulse' 
+                      : 'bg-surface-elevated border-border text-text-secondary hover:bg-border'
+                  }`}
+                >
+                  {isRecording ? 'Press keys...' : hk.keybinding}
+                </button>
+                <ToggleSwitch
+                  checked={hk.is_active === 1}
+                  onChange={() => toggleHotkey(hk)}
+                />
+              </div>
+            </div>
+          )
+        })}
       </div>
     </SettingsCard>
   )

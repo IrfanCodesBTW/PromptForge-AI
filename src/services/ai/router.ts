@@ -24,9 +24,9 @@ export class ProviderRouter {
    * Initialize providers from database configuration
    */
   private initProviders(): void {
-    // Always register Ollama (no API key needed)
-    this.providers.set('ollama', new OllamaProvider())
-    this.fallbackOrder.push('ollama')
+    // Clear existing
+    this.providers.clear()
+    this.fallbackOrder = []
 
     // Load configured cloud providers from DB
     try {
@@ -43,10 +43,8 @@ export class ProviderRouter {
       }[]
 
       for (const row of rows) {
-        if (row.name === 'ollama') continue // Already registered
-
+        let apiKey: string = ''
         if (row.api_key_encrypted) {
-          let apiKey: string
           try {
             // Decrypt API key using Electron safeStorage
             const { safeStorage } = require('electron')
@@ -56,9 +54,17 @@ export class ProviderRouter {
             // If decryption fails, use the raw value (dev mode fallback)
             apiKey = row.api_key_encrypted
           }
+        }
 
-          switch (row.name) {
-            case 'groq':
+        switch (row.name) {
+          case 'ollama':
+            this.providers.set(
+              'ollama',
+              new OllamaProvider(row.base_url || 'http://127.0.0.1:11434', row.default_model)
+            )
+            this.fallbackOrder.push('ollama')
+            break
+          case 'groq':
               this.providers.set('groq', new GroqProvider(apiKey, row.default_model))
               break
             case 'openai':
@@ -87,7 +93,6 @@ export class ProviderRouter {
               )
           }
           this.fallbackOrder.push(row.name)
-        }
       }
     } catch (error) {
       console.warn('[Router] Failed to load providers from DB:', error)
@@ -144,9 +149,12 @@ export class ProviderRouter {
     options?: CompletionOptions,
     preferredProvider?: string
   ): Promise<CompletionResult> {
-    // Build ordered list: preferred first, then fallback chain
-    const tryOrder = preferredProvider
-      ? [preferredProvider, ...this.fallbackOrder.filter((p) => p !== preferredProvider)]
+    const defaultProviderId = this.getDefaultProvider()?.id
+    const startProvider = preferredProvider || defaultProviderId
+
+    // Build ordered list: startProvider first, then fallback chain
+    const tryOrder = startProvider
+      ? [startProvider, ...this.fallbackOrder.filter((p) => p !== startProvider)]
       : this.fallbackOrder
 
     let lastError: Error | null = null

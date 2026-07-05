@@ -68,6 +68,9 @@ export class PromptEngine {
       options?.provider
     )
 
+    // Clean LLM response from conversational fluff and surrounding quotes
+    result.text = cleanLLMResponse(result.text)
+
     // Step 4: Save to history
     let historyId: string | undefined
     try {
@@ -123,4 +126,32 @@ export class PromptEngine {
   getRouter(): ProviderRouter {
     return this.router
   }
+}
+
+export function cleanLLMResponse(text: string): string {
+  let cleaned = text.trim()
+
+  // 1. Remove typical conversational intro patterns (case-insensitive)
+  // Matches "Here is/are [the/your] [enhanced/expanded/compressed/translated/corrected] [prompt/text/version] [:]"
+  // and variations like "Sure! Here is..." or "Certainly, here's..."
+  const conversationalIntroRegex = /^(?:(?:sure|certainly|here's|here\s+is|here\s+are|as\s+requested|ok|okay|sure\s+thing|absolutely)[,\s!]*)*(?:here\s+is|here\s+are|here's|this\s+is|the|your)?\s*(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed|final|new|prd|markdown|prds|notes-to-prompt)?\s*(?:prompt|text|version|prd|doc|document|result|output)?[,\s]*as\s+requested[,\s]*[:\-]*|^(?:(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed)\s+(?:prompt|text|version|prd|result|output)[:\-]+)/i
+
+  cleaned = cleaned.replace(conversationalIntroRegex, '').trim()
+
+  // 2. Remove surrounding double quotes, single quotes, or backticks
+  // Handles straight quotes ", ', and curly quotes “, ”, ‘, ’
+  const startQuote = cleaned[0]
+  const endQuote = cleaned[cleaned.length - 1]
+  const isWrapped = 
+    (startQuote === '"' && endQuote === '"') ||
+    (startQuote === "'" && endQuote === "'") ||
+    (startQuote === '`' && endQuote === '`') ||
+    (startQuote === '“' && endQuote === '”') ||
+    (startQuote === '‘' && endQuote === '’')
+
+  if (isWrapped) {
+    cleaned = cleaned.substring(1, cleaned.length - 1).trim()
+  }
+
+  return cleaned
 }

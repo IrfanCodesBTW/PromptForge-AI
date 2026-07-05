@@ -9,9 +9,16 @@ import { IPC_CHANNELS } from '../../shared/constants'
 import { PromptEngine } from '../../services/prompt/engine'
 import { HistoryService } from '../../services/db/history'
 import { TemplateService } from '../../services/db/templates'
+import { GroqProvider } from '../../services/ai/groq'
+import { OpenAIProvider } from '../../services/ai/openai'
+import { OllamaProvider } from '../../services/ai/ollama'
 import type { EnhanceRequest, HistoryFilter } from '../../shared/types'
+import type { HotkeyManager } from '../hotkeys/manager'
 
-export function registerIpcHandlers(db: DatabaseWrapper): void {
+export function registerIpcHandlers(
+  db: DatabaseWrapper,
+  getHotkeyManager: () => HotkeyManager | null
+): void {
   const engine = new PromptEngine(db)
   const history = new HistoryService(db)
   const templates = new TemplateService(db)
@@ -133,8 +140,18 @@ export function registerIpcHandlers(db: DatabaseWrapper): void {
 
   ipcMain.handle(
     IPC_CHANNELS.PROVIDER_TEST,
-    async (_event, data: { provider: string; apiKey?: string }) => {
-      const provider = engine.getRouter().getProvider(data.provider)
+    async (_event, data: { provider: string; apiKey: string }) => {
+      let provider: AIProvider | null = null
+      
+      const row = db.prepare('SELECT default_model FROM providers WHERE name = ?').get(data.provider) as { default_model: string } | undefined
+      const defaultModel = row?.default_model || undefined
+
+      if (data.provider === 'groq') {
+        provider = new GroqProvider(data.apiKey, defaultModel)
+      } else if (data.provider === 'openai' || data.provider === 'openrouter') {
+        provider = new OpenAIProvider(data.apiKey, defaultModel, undefined, data.provider, data.provider)
+      }
+
       if (!provider) {
         return { name: data.provider, status: 'offline', lastChecked: new Date().toISOString() }
       }
@@ -146,6 +163,88 @@ export function registerIpcHandlers(db: DatabaseWrapper): void {
       }
     }
   )
+
+  ipcMain.handle(
+    IPC_CHANNELS.PROVIDER_UPDATE,
+    async (_event, data: { provider: string; apiKey?: string; model?: string }) => {
+      try {
+        const { safeStorage } = require('electron')
+        let encryptedKey = data.apiKey
+        if (data.apiKey && safeStorage && safeStorage.isEncryptionAvailable && safeStorage.isEncryptionAvailable()) {
+          const buffer = safeStorage.encryptString(data.apiKey)
+          encryptedKey = buffer.toString('base64')
+        }
+
+        const existing = db.prepare('SELECT id FROM providers WHERE name = ?').get(data.provider)
+        
+        if (existing) {
+          if (data.apiKey !== undefined) {
+             db.prepare('UPDATE providers SET api_key_encrypted = ?, is_active = 1 WHERE name = ?').run(encryptedKey, data.provider)
+          }
+          if (data.model !== undefined) {
+             db.prepare('UPDATE providers SET default_model = ?, is_active = 1 WHERE name = ?').run(data.model, data.provider)
+          }
+        } else {
+          let baseUrl = ''
+          let defaultModel = data.model || ''
+          if (!defaultModel) {
+            if (data.provider === 'groq') defaultModel = 'llama-3.1-8b-instant'
+            if (data.provider === 'openai') {
+               baseUrl = 'https://api.openai.com/v1'
+               defaultModel = 'gpt-4o'
+            }
+            if (data.provider === 'openrouter') {
+               baseUrl = 'https://openrouter.ai/api/v1'
+               defaultModel = 'anthropic/claude-3.5-sonnet'
+            }
+          }
+          db.prepare('INSERT INTO providers (name, type, base_url, api_key_encrypted, default_model, is_active, priority) VALUES (?, ?, ?, ?, ?, 1, 50)').run(
+            data.provider, data.provider === 'ollama' ? 'local' : 'cloud', baseUrl, encryptedKey, defaultModel
+          )
+        }
+        db.save()
+
+        // Fetch the default model to properly initialize the new provider
+        const row = db.prepare('SELECT default_model, api_key_encrypted FROM providers WHERE name = ?').get(data.provider) as { default_model: string, api_key_encrypted: string | null } | undefined
+        const defaultModel = row?.default_model || undefined
+        
+        let apiKeyForInit = data.apiKey
+        if (apiKeyForInit === undefined && row?.api_key_encrypted) {
+           const { safeStorage } = require('electron')
+           try {
+             apiKeyForInit = safeStorage.decryptString(Buffer.from(row.api_key_encrypted, 'base64'))
+           } catch {
+             apiKeyForInit = row.api_key_encrypted
+           }
+        }
+
+        if (data.provider === 'groq') {
+          engine.getRouter().registerProvider('groq', new GroqProvider(apiKeyForInit || '', defaultModel))
+        } else if (data.provider === 'openai' || data.provider === 'openrouter') {
+          engine.getRouter().registerProvider(data.provider, new OpenAIProvider(apiKeyForInit || '', defaultModel, undefined, data.provider, data.provider))
+        } else if (data.provider === 'ollama') {
+          engine.getRouter().registerProvider('ollama', new OllamaProvider('http://localhost:11434', defaultModel))
+        }
+        
+        return { success: true }
+      } catch (err: any) {
+        console.error('[IPC] PROVIDER_UPDATE Error:', err)
+        throw err
+      }
+    }
+  )
+  ipcMain.removeHandler(IPC_CHANNELS.PROVIDER_MODELS)
+  ipcMain.handle(IPC_CHANNELS.PROVIDER_MODELS, async (_event, data: { provider: string }) => {
+    try {
+      const provider = engine.getRouter().getProvider(data.provider)
+      if (provider) {
+        return await provider.listModels()
+      }
+      return []
+    } catch {
+      return []
+    }
+  })
 
   // ===== Hotkeys =====
 
@@ -159,6 +258,10 @@ export function registerIpcHandlers(db: DatabaseWrapper): void {
       binding.is_active ? 1 : 0,
       binding.id
     )
+    const hm = getHotkeyManager()
+    if (hm) {
+      hm.registerAll()
+    }
   })
 
   // ===== App =====

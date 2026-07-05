@@ -38,6 +38,7 @@ export const IPC_CHANNELS = {
   PROVIDER_TEST: 'promptforge:provider:test',
   PROVIDER_STATUS: 'promptforge:provider:status',
   PROVIDER_MODELS: 'promptforge:provider:models',
+  PROVIDER_UPDATE: 'promptforge:provider:update',
 
   // Hotkeys
   HOTKEY_LIST: 'promptforge:hotkey:list',
@@ -157,7 +158,7 @@ export const DEFAULT_PROVIDERS = {
     name: 'groq' as const,
     type: 'cloud' as const,
     baseUrl: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.1-70b-versatile',
+    defaultModel: 'llama-3.1-8b-instant',
     priority: 90
   },
   openai: {

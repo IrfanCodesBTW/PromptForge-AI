@@ -56,8 +56,13 @@ function createMainWindow(): BrowserWindow {
   return win
 }
 
-app.whenReady().then(async () => {
-  // Set app user model id for windows
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.whenReady().then(async () => {
+    // Set app user model id for windows
   electronApp.setAppUserModelId('com.promptforge.ai')
 
   // Watch for shortcut creation on install
@@ -69,7 +74,7 @@ app.whenReady().then(async () => {
   const db = await initDatabaseAsync()
 
   // Register IPC handlers
-  registerIpcHandlers(db)
+  registerIpcHandlers(db, () => hotkeyManager)
 
   // Create main window
   mainWindow = createMainWindow()
@@ -87,6 +92,7 @@ app.whenReady().then(async () => {
     }
   })
 })
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

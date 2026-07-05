@@ -1,5 +1,5 @@
 import { Minus, Square, X } from 'lucide-react'
-import { APP_NAME } from '../../../shared/constants'
+import { APP_NAME } from '../../../../shared/constants'
 
 export function Titlebar(): JSX.Element {
   return (

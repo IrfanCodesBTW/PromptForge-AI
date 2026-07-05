@@ -11,7 +11,7 @@ export class GroqProvider implements AIProvider {
   private client: Groq
   private defaultModel: string
 
-  constructor(apiKey: string, defaultModel: string = 'llama-3.1-70b-versatile') {
+  constructor(apiKey: string, defaultModel: string = 'llama-3.1-8b-instant') {
     this.client = new Groq({ apiKey })
     this.defaultModel = defaultModel
   }
@@ -66,7 +66,7 @@ export class GroqProvider implements AIProvider {
       const response = await this.client.models.list()
       return response.data.map((m) => m.id)
     } catch {
-      return ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
+      return ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'mixtral-8x7b-32768']
     }
   }
 }
