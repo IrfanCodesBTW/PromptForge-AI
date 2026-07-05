@@ -69,24 +69,24 @@ export function Settings(): JSX.Element {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-xl">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
+          <h1 className="text-xl font-medium font-serif text-text-primary">Settings</h1>
           <p className="text-sm text-text-secondary mt-xs">
             Configure PromptForge AI to your preferences
           </p>
         </div>
       </div>
-
+ 
       <div className="flex gap-lg">
         {/* Section tabs */}
-        <nav className="w-40 flex-shrink-0 space-y-xs">
+        <nav className="w-44 flex-shrink-0 space-y-xs select-none">
           {sections.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveSection(id)}
-              className={`w-full flex items-center gap-sm px-md py-sm rounded-md text-sm transition-colors ${
+              className={`w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 activeSection === id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface'
+                  ? 'bg-mint-100 text-text-primary font-medium'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-card-hover'
               }`}
             >
               <Icon size={16} />
@@ -94,8 +94,8 @@ export function Settings(): JSX.Element {
             </button>
           ))}
         </nav>
-
-        <div className="flex-1 space-y-lg">
+ 
+        <div className="flex-1 space-y-5">
           {activeSection === 'general' && (
             <GeneralSettings settings={settings} onSave={saveSetting} />
           )}
@@ -116,9 +116,9 @@ export function Settings(): JSX.Element {
     </div>
   )
 }
-
+ 
 // ----- Section Components -----
-
+ 
 function GeneralSettings({
   settings,
   onSave
@@ -127,19 +127,19 @@ function GeneralSettings({
   onSave: (key: string, value: string) => void
 }) {
   return (
-    <div className="space-y-lg">
+    <div className="space-y-5">
       <SettingsCard title="Default Provider" description="Choose the AI provider used for enhancements">
         <select
           value={settings.defaultProvider || 'ollama'}
           onChange={(e) => onSave('defaultProvider', e.target.value)}
-          className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+          className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         >
           <option value="ollama">Ollama (Local)</option>
           <option value="groq">Groq (Cloud)</option>
           <option value="openai">OpenAI (Cloud)</option>
         </select>
       </SettingsCard>
-
+ 
       <SettingsCard title="Temperature" description="Controls randomness (0.0 = deterministic, 2.0 = creative)">
         <div className="flex items-center gap-md">
           <input
@@ -149,14 +149,14 @@ function GeneralSettings({
             step="0.1"
             value={settings.temperature || '0.7'}
             onChange={(e) => onSave('temperature', e.target.value)}
-            className="flex-1 accent-primary"
+            className="flex-1 accent-primary cursor-pointer"
           />
-          <span className="text-sm text-text-secondary w-10 text-right">
+          <span className="text-sm text-text-secondary w-10 text-right font-mono">
             {settings.temperature || '0.7'}
           </span>
         </div>
       </SettingsCard>
-
+ 
       <SettingsCard title="Max Tokens" description="Maximum output length (256–8192)">
         <input
           type="number"
@@ -165,10 +165,10 @@ function GeneralSettings({
           step="256"
           value={settings.maxTokens || '2048'}
           onChange={(e) => onSave('maxTokens', e.target.value)}
-          className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+          className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         />
       </SettingsCard>
-
+ 
       <SettingsCard title="Auto-Paste" description="Automatically paste enhanced text after processing">
         <ToggleSwitch
           checked={settings.clipboard_auto_paste !== 'false'}
@@ -249,34 +249,34 @@ function ProviderSettings({
   }
 
   return (
-    <div className="space-y-lg">
+    <div className="space-y-5">
       <SettingsCard title="AI Providers" description="Configure API keys for cloud providers">
         <div className="space-y-md">
           <select
             value={selectedProvider}
             onChange={(e) => setSelectedProvider(e.target.value)}
-            className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+            className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
           >
             <option value="ollama">Ollama (Local)</option>
             <option value="groq">Groq</option>
             <option value="openai">OpenAI</option>
             <option value="openrouter">OpenRouter</option>
           </select>
-
+ 
           {selectedProvider !== 'ollama' && (
             <input
               type="password"
               placeholder="API Key (Leave blank to keep existing)"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+              className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
             />
           )}
-
+ 
           <select
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
-            className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+            className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
             disabled={loadingModels}
           >
             {loadingModels && <option value="">Loading models...</option>}
@@ -284,19 +284,19 @@ function ProviderSettings({
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-
+ 
           <div className="flex gap-sm">
             <button
               onClick={testProvider}
               disabled={testing}
-              className="flex items-center gap-xs px-md py-sm bg-surface-elevated rounded-md text-sm text-text-primary hover:bg-border transition-colors disabled:opacity-50"
+              className="flex items-center gap-xs h-9 px-4 bg-pill-bg rounded-full text-sm text-text-primary hover:bg-pill-bg-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none transition-all duration-[160ms] ease-standard active:scale-98 disabled:opacity-50 disabled:pointer-events-none select-none"
             >
               <CheckCircle size={14} />
               {testing ? 'Testing...' : 'Test Connection'}
             </button>
             <button
               onClick={saveProvider}
-              className="flex items-center gap-xs px-md py-sm bg-primary rounded-md text-sm text-white hover:bg-primary-hover transition-colors"
+              className="flex items-center gap-xs h-9 px-4 bg-primary text-text-inverse rounded-full text-sm hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none transition-all duration-[160ms] ease-standard active:scale-98 select-none"
             >
               <Save size={14} />
               Save
@@ -304,20 +304,20 @@ function ProviderSettings({
           </div>
         </div>
       </SettingsCard>
-
+ 
       <SettingsCard title="Provider Status" description="Current health of configured providers">
         <div className="space-y-sm">
           {(providers as { name: string; type: string; is_active: number }[]).map((p) => (
-            <div key={p.name} className="flex items-center justify-between py-xs">
+            <div key={p.name} className="flex items-center justify-between py-xs border-b border-border/40 last:border-0">
               <div className="flex items-center gap-sm">
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    p.is_active ? 'bg-success' : 'bg-text-muted'
+                    p.is_active ? 'bg-success' : 'bg-disabled-text'
                   }`}
                 />
                 <span className="text-sm text-text-primary capitalize">{p.name}</span>
               </div>
-              <span className="text-xs text-text-muted">{p.type}</span>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pill-bg text-text-secondary select-none">{p.type}</span>
             </div>
           ))}
         </div>
@@ -405,19 +405,19 @@ function HotkeySettings({
         {(hotkeys as { id: string; action: string; keybinding: string; is_active: number }[]).map((hk) => {
           const isRecording = recordingId === hk.id
           return (
-            <div key={hk.action} className="flex items-center justify-between p-md bg-surface border border-border rounded-lg">
+            <div key={hk.action} className="flex items-center justify-between p-md bg-surface border border-border rounded-sm">
               <div>
-                <span className="text-sm font-medium text-text-primary capitalize block">{hk.action}</span>
-                <span className="text-xs text-text-muted">Trigger the {hk.action} prompt template</span>
+                <span className="text-sm font-medium text-text-primary capitalize block font-sans">{hk.action}</span>
+                <span className="text-xs text-text-secondary mt-xs font-sans">Trigger the {hk.action} prompt template</span>
               </div>
               <div className="flex items-center gap-sm">
                 <button
                   onClick={() => isRecording ? cancelRecording() : startRecording(hk.id)}
                   onKeyDown={(e) => isRecording && handleKeyDown(e, hk)}
-                  className={`px-md py-sm rounded-md text-xs font-mono border transition-all min-w-[120px] text-center ${
+                  className={`h-9 px-md rounded-sm text-xs font-mono border transition-all duration-[160ms] ease-standard min-w-[120px] text-center select-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                     isRecording 
-                      ? 'bg-primary border-primary text-white animate-pulse' 
-                      : 'bg-surface-elevated border-border text-text-secondary hover:bg-border'
+                      ? 'bg-primary border-primary text-text-inverse animate-pulse' 
+                      : 'bg-surface-elevated border-border text-text-primary hover:bg-pill-bg-hover hover:border-text-secondary'
                   }`}
                 >
                   {isRecording ? 'Press keys...' : hk.keybinding}
@@ -434,7 +434,7 @@ function HotkeySettings({
     </SettingsCard>
   )
 }
-
+ 
 function AppearanceSettings({
   settings,
   onSave
@@ -449,10 +449,10 @@ function AppearanceSettings({
           <button
             key={theme}
             onClick={() => onSave('theme', theme)}
-            className={`flex-1 px-md py-sm rounded-md text-sm capitalize transition-colors ${
+            className={`flex-1 h-9 px-4 rounded-full text-sm capitalize transition-all duration-[160ms] ease-standard active:scale-98 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none select-none ${
               (settings.theme || 'system') === theme
-                ? 'bg-primary text-white'
-                : 'bg-surface text-text-secondary hover:bg-surface-elevated'
+                ? 'bg-primary text-text-inverse font-medium'
+                : 'bg-pill-bg text-text-primary hover:bg-pill-bg-hover'
             }`}
           >
             {theme}
@@ -462,7 +462,7 @@ function AppearanceSettings({
     </SettingsCard>
   )
 }
-
+ 
 function PrivacySettings({
   settings,
   onSave
@@ -471,12 +471,12 @@ function PrivacySettings({
   onSave: (key: string, value: string) => void
 }) {
   return (
-    <div className="space-y-lg">
+    <div className="space-y-5">
       <SettingsCard title="Data Retention" description="How long to keep prompt history">
         <select
           value={settings.data_retention_days || '-1'}
           onChange={(e) => onSave('data_retention_days', e.target.value)}
-          className="w-full bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+          className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         >
           <option value="-1">Forever</option>
           <option value="30">30 days</option>
@@ -484,7 +484,7 @@ function PrivacySettings({
           <option value="365">1 year</option>
         </select>
       </SettingsCard>
-
+ 
       <SettingsCard title="Analytics" description="Anonymous usage statistics">
         <ToggleSwitch
           checked={settings.analytics_enabled === 'true'}
@@ -494,9 +494,9 @@ function PrivacySettings({
     </div>
   )
 }
-
+ 
 // ----- Shared Components -----
-
+ 
 function SettingsCard({
   title,
   description,
@@ -507,16 +507,16 @@ function SettingsCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-surface rounded-lg border border-border p-lg">
+    <div className="bg-surface-elevated rounded-lg border border-border p-xl shadow-card">
       <div className="mb-md">
-        <h3 className="text-sm font-medium text-text-primary">{title}</h3>
-        <p className="text-xs text-text-muted mt-xs">{description}</p>
+        <h3 className="text-md font-medium text-text-primary font-sans">{title}</h3>
+        <p className="text-xs text-text-secondary mt-xs font-sans">{description}</p>
       </div>
       {children}
     </div>
   )
 }
-
+ 
 function ToggleSwitch({
   checked,
   onChange
@@ -529,13 +529,15 @@ function ToggleSwitch({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? 'bg-primary' : 'bg-border'
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full border transition-all duration-[160ms] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+        checked
+          ? 'bg-primary border-primary hover:bg-primary-hover'
+          : 'bg-pill-bg border-border hover:bg-pill-bg-hover'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          checked ? 'translate-x-6' : 'translate-x-1'
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-[160ms] ease-standard ${
+          checked ? 'translate-x-5' : 'translate-x-1'
         }`}
       />
     </button>

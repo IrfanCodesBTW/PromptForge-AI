@@ -66,26 +66,27 @@ export function History(): JSX.Element {
   return (
     <div className="max-w-5xl mx-auto h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-lg">
+      <div className="flex items-center justify-between mb-lg select-none">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">History</h1>
-          <p className="text-sm text-text-secondary mt-xs">
+          <h1 className="text-xl font-medium font-serif text-text-primary">History</h1>
+          <p className="text-sm text-text-secondary mt-xs font-sans">
             {total} enhancement{total !== 1 ? 's' : ''} recorded
           </p>
         </div>
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-sm">
-            <span className="text-xs text-text-muted">{selectedIds.size} selected</span>
+            <span className="text-xs text-text-secondary font-medium">{selectedIds.size} selected</span>
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center gap-xs px-md py-xs bg-error/10 text-error rounded-md text-sm hover:bg-error/20 transition-colors"
+              className="flex items-center gap-xs px-4 h-8 bg-[--color-red-bg] text-error font-medium rounded-full text-sm hover:opacity-90 transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none active:scale-98"
             >
               <Trash2 size={14} />
               Delete
             </button>
             <button
               onClick={clearSelection}
-              className="text-text-muted hover:text-text-primary"
+              className="p-1 text-text-secondary hover:text-text-primary hover:bg-surface-card-hover rounded-full transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              aria-label="Clear selection"
             >
               <X size={14} />
             </button>
@@ -98,19 +99,19 @@ export function History(): JSX.Element {
         <div className="flex-1 relative">
           <Search
             size={16}
-            className="absolute left-md top-1/2 -translate-y-1/2 text-text-muted"
+            className="absolute left-md top-1/2 -translate-y-1/2 text-text-secondary"
           />
           <input
             type="text"
             placeholder="Search prompts..."
             onChange={(e) => debouncedSearch(e.target.value)}
-            className="w-full bg-surface border border-border rounded-md pl-10 pr-md py-sm text-sm text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className="w-full bg-surface-elevated border border-border rounded-sm pl-10 pr-md py-sm text-sm text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
           />
         </div>
         <select
           value={filter.provider || ''}
           onChange={(e) => setFilter({ provider: e.target.value || undefined })}
-          className="bg-surface border border-border rounded-md px-md py-sm text-sm text-text-primary outline-none focus:border-primary"
+          className="bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         >
           <option value="">All Providers</option>
           <option value="ollama">Ollama</option>
@@ -119,10 +120,10 @@ export function History(): JSX.Element {
         </select>
         <button
           onClick={() => setFilter({ isFavorite: filter.isFavorite ? undefined : true })}
-          className={`flex items-center gap-xs px-md py-sm rounded-md text-sm transition-colors border ${
+          className={`flex items-center gap-xs h-9 px-4 rounded-full text-sm font-medium transition-all duration-[160ms] ease-standard active:scale-98 border focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none select-none ${
             filter.isFavorite
               ? 'border-warning bg-warning/10 text-warning'
-              : 'border-border bg-surface text-text-secondary hover:bg-surface-elevated'
+              : 'border-border bg-pill-bg text-text-primary hover:bg-pill-bg-hover'
           }`}
         >
           <Star size={14} />
@@ -131,7 +132,7 @@ export function History(): JSX.Element {
         {Object.keys(filter).length > 0 && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-xs px-md py-sm text-sm text-text-muted hover:text-text-primary"
+            className="flex items-center gap-xs h-9 px-4 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-surface-card-hover transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none select-none"
           >
             <X size={14} />
             Clear
@@ -146,10 +147,10 @@ export function History(): JSX.Element {
         )}
 
         {!isLoading && entries.length === 0 && (
-          <div className="text-center py-3xl">
-            <Clock size={48} className="mx-auto text-text-muted mb-md" />
-            <p className="text-text-secondary">No history yet</p>
-            <p className="text-xs text-text-muted mt-xs">
+          <div className="text-center py-20 bg-surface-elevated rounded-lg border border-border p-xl shadow-card">
+            <Clock size={24} className="mx-auto text-text-secondary mb-md" />
+            <p className="text-sm font-medium text-text-primary">No history yet</p>
+            <p className="text-xs text-text-secondary mt-xs">
               Enhance some text to see it appear here
             </p>
           </div>
@@ -158,40 +159,40 @@ export function History(): JSX.Element {
         {entries.map((entry) => (
           <div
             key={entry.id}
-            className={`bg-surface border rounded-lg p-lg transition-colors cursor-pointer ${
+            className={`bg-surface-elevated border transition-all duration-[220ms] ease-standard cursor-pointer rounded-lg p-xl ${
               selectedIds.has(entry.id)
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:border-text-muted'
+                ? 'border-primary bg-mint-100/10 shadow-raised'
+                : 'border-border hover:border-text-secondary hover:shadow-card'
             }`}
             onClick={() => toggleSelected(entry.id)}
           >
             {/* Entry Header */}
-            <div className="flex items-center justify-between mb-sm">
+            <div className="flex items-center justify-between mb-sm select-none">
               <div className="flex items-center gap-sm">
-                <span className="text-xs px-sm py-xs bg-surface-elevated rounded text-text-secondary font-mono">
+                <span className="text-xs font-mono font-medium px-2 py-0.5 bg-pill-bg text-text-secondary rounded-full">
                   {entry.provider}/{entry.model}
                 </span>
-                <span className="text-xs text-text-muted">{entry.category}</span>
+                <span className="text-xs text-text-secondary font-medium capitalize font-sans">{entry.category}</span>
               </div>
               <div className="flex items-center gap-sm">
-                <span className="text-xs text-text-muted flex items-center gap-xs">
-                  <Zap size={12} />
+                <span className="text-xs text-text-secondary flex items-center gap-xs font-sans">
+                  <Zap size={12} className="text-primary" />
                   {formatTokens(entry.tokensUsed)} tokens · {formatDuration(entry.latencyMs)}
                 </span>
-                <span className="text-xs text-text-muted">{formatDate(entry.createdAt)}</span>
+                <span className="text-xs text-text-secondary font-sans">{formatDate(entry.createdAt)}</span>
               </div>
             </div>
 
             {/* Original → Enhanced */}
-            <div className="grid grid-cols-2 gap-md">
+            <div className="grid grid-cols-2 gap-md font-sans">
               <div className="min-w-0">
-                <p className="text-xs text-text-muted mb-xs font-medium">Original</p>
+                <p className="text-xs text-text-secondary mb-xs font-medium uppercase tracking-wider">Original</p>
                 <p className="text-sm text-text-secondary leading-relaxed">
                   {truncate(entry.originalText, 200)}
                 </p>
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-text-muted mb-xs font-medium">Enhanced</p>
+                <p className="text-xs text-text-secondary mb-xs font-medium uppercase tracking-wider">Enhanced</p>
                 <p className="text-sm text-text-primary leading-relaxed">
                   {truncate(entry.enhancedText, 200)}
                 </p>
@@ -199,17 +200,18 @@ export function History(): JSX.Element {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-sm mt-md pt-sm border-t border-border">
+            <div className="flex items-center gap-sm mt-md pt-sm border-t border-border select-none">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleFavorite(entry.id, !entry.isFavorite)
                 }}
-                className={`p-xs rounded transition-colors ${
+                className={`p-1.5 rounded-full transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                   entry.isFavorite
-                    ? 'text-warning hover:text-warning/80'
-                    : 'text-text-muted hover:text-warning'
+                    ? 'text-warning hover:text-warning/80 bg-warning/5'
+                    : 'text-text-secondary hover:text-warning hover:bg-warning/5'
                 }`}
+                aria-label={entry.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               >
                 <Star size={14} fill={entry.isFavorite ? 'currentColor' : 'none'} />
               </button>
@@ -218,7 +220,8 @@ export function History(): JSX.Element {
                   e.stopPropagation()
                   copyToClipboard(entry.enhancedText)
                 }}
-                className="p-xs text-text-muted hover:text-text-primary rounded transition-colors"
+                className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-card-hover rounded-full transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                aria-label="Copy enhanced text"
               >
                 <Copy size={14} />
               </button>
@@ -227,7 +230,8 @@ export function History(): JSX.Element {
                   e.stopPropagation()
                   deleteEntries([entry.id])
                 }}
-                className="p-xs text-text-muted hover:text-error rounded transition-colors"
+                className="p-1.5 text-text-secondary hover:text-error hover:bg-error/5 rounded-full transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none"
+                aria-label="Delete entry"
               >
                 <Trash2 size={14} />
               </button>
@@ -238,21 +242,23 @@ export function History(): JSX.Element {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-sm pt-lg border-t border-border mt-lg">
+        <div className="flex items-center justify-center gap-sm pt-lg border-t border-border mt-lg select-none">
           <button
             onClick={() => setPage(page - 1)}
             disabled={page <= 1}
-            className="p-xs text-text-muted hover:text-text-primary disabled:opacity-30"
+            className="p-2 text-text-secondary hover:text-text-primary hover:bg-surface-card-hover rounded-full transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="Previous page"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm text-text-secondary">
+          <span className="text-sm text-text-secondary font-sans font-medium">
             Page {page} of {totalPages}
           </span>
           <button
             onClick={() => setPage(page + 1)}
             disabled={page >= totalPages}
-            className="p-xs text-text-muted hover:text-text-primary disabled:opacity-30"
+            className="p-2 text-text-secondary hover:text-text-primary hover:bg-surface-card-hover rounded-full transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="Next page"
           >
             <ChevronRight size={18} />
           </button>

@@ -10,21 +10,21 @@ export function Titlebar(): JSX.Element {
       </div>
       <div className="titlebar-no-drag flex items-center h-full">
         <button
-          className="h-full px-md hover:bg-surface-elevated transition-colors text-text-secondary hover:text-text-primary"
+          className="h-full px-md hover:bg-surface-card-hover transition-colors text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary focus-visible:outline-none"
           onClick={() => window.api?.invoke('promptforge:window:toggle', { action: 'minimize' })}
           aria-label="Minimize"
         >
           <Minus size={14} />
         </button>
         <button
-          className="h-full px-md hover:bg-surface-elevated transition-colors text-text-secondary hover:text-text-primary"
+          className="h-full px-md hover:bg-surface-card-hover transition-colors text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary focus-visible:outline-none"
           onClick={() => window.api?.invoke('promptforge:window:toggle', { action: 'maximize' })}
           aria-label="Maximize"
         >
           <Square size={12} />
         </button>
         <button
-          className="h-full px-md hover:bg-error transition-colors text-text-secondary hover:text-white"
+          className="h-full px-md hover:bg-error hover:text-white transition-colors text-text-secondary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-error focus-visible:outline-none"
           onClick={() => window.api?.invoke('promptforge:app:quit')}
           aria-label="Close"
         >

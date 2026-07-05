@@ -9,9 +9,9 @@ const navItems = [
 
 export function Sidebar(): JSX.Element {
   return (
-    <aside className="w-[200px] flex-shrink-0 bg-surface border-r border-border flex flex-col">
+    <aside className="w-[220px] flex-shrink-0 bg-surface border-r border-border flex flex-col select-none">
       <div className="p-lg">
-        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
+        <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider font-sans">
           Navigation
         </h2>
       </div>
@@ -21,10 +21,10 @@ export function Sidebar(): JSX.Element {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-sm px-md py-sm rounded-md text-sm transition-colors duration-150 mb-xs ${
+              `flex items-center gap-sm px-md py-sm rounded-sm text-sm transition-all duration-[160ms] ease-standard mb-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 isActive
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+                  ? 'bg-mint-100 text-text-primary font-medium'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-card-hover'
               }`
             }
           >
@@ -36,7 +36,7 @@ export function Sidebar(): JSX.Element {
       <div className="p-lg border-t border-border">
         <div className="flex items-center gap-sm">
           <div className="w-2 h-2 rounded-full bg-success" />
-          <span className="text-xs text-text-muted">Ready</span>
+          <span className="text-xs text-text-secondary font-medium">Ready</span>
         </div>
       </div>
     </aside>

@@ -8,40 +8,60 @@
    ==================================================== */
 
 :root {
-  /* Dark mode (default) */
-  --color-bg: #0F1419;
-  --color-surface: #1A2332;
-  --color-surface-elevated: #243447;
-  --color-primary: #3B82F6;
-  --color-primary-hover: #2563EB;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  --color-border: #334155;
+  /* Wispr-Flow-inspired light (new default) */
+  --color-bg: #F7F4EC;
+  --color-surface: #F7F4EC;         /* sidebar/canvas now match, per layout.md */
+  --color-surface-elevated: #FFFFFF; /* cards */
+  --color-surface-card-hover: #EFEBE0;
+  --color-primary: #2F4F42;          /* forest — replaces old blue */
+  --color-primary-hover: #254036;
+  --color-success: #4F8A66;
+  --color-warning: #C98A2B;
+  --color-error: #D9483F;
+  --color-text-primary: #211F1B;
+  --color-text-secondary: #68625A;
+  --color-text-muted: #847D70;
+  --color-border: #E8E3D6;
+
+  /* Additional colors/tokens from tokens.json */
+  --color-mint-100: #E4F0E7;
+  --color-lavender-bg: #E9E1FA;
+  --color-lavender-text: #5B3FA0;
+  --color-disabled-bg: #EFECE3;
+  --color-disabled-text: #B7B1A5;
+  --color-pill-bg: #F1EDE3;
+  --color-pill-bg-hover: #E8E3D6;
 
   /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-               Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code',
-               'SF Mono', Consolas, monospace;
+  --font-serif: 'GT Sectra', 'Tiempos Headline', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 }
 
-[data-theme="light"] {
-  --color-bg: #FFFFFF;
-  --color-surface: #F8FAFC;
-  --color-surface-elevated: #FFFFFF;
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-error: #DC2626;
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
-  --color-border: #E2E8F0;
+[data-theme="dark"] {
+  /* Dark mode variant matching forest accent and cream base */
+  --color-bg: #1C1B17;
+  --color-surface: #1C1B17;
+  --color-surface-elevated: #262420;
+  --color-surface-card-hover: #2B2925;
+  --color-primary: #7FB897;          /* lighter forest for dark-mode contrast */
+  --color-primary-hover: #96C9AA;
+  --color-success: #4F8A66;
+  --color-warning: #C98A2B;
+  --color-error: #D9483F;
+  --color-text-primary: #F3F0E8;
+  --color-text-secondary: #B8B2A5;
+  --color-text-muted: #8C8676;
+  --color-border: #38362F;
+
+  /* Dark mode equivalent additional colors */
+  --color-mint-100: #254036;
+  --color-lavender-bg: #3E2F5D;
+  --color-lavender-text: #C1B5E3;
+  --color-disabled-bg: #2B2925;
+  --color-disabled-text: #706B62;
+  --color-pill-bg: #2B2925;
+  --color-pill-bg-hover: #3D3930;
 }
 
 /* ---- Base Resets ---- */
@@ -123,20 +143,4 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* ---- Utility Classes ---- */
 
-@layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400;
-  }
-
-  .glass {
-    background: rgba(26, 35, 50, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  .glass-border {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-}
