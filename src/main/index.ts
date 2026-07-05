@@ -13,6 +13,7 @@ import { APP_NAME } from '../shared/constants'
 
 let mainWindow: BrowserWindow | null = null
 let hotkeyManager: HotkeyManager | null = null
+let isQuitting = false
 
 function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -22,6 +23,7 @@ function createMainWindow(): BrowserWindow {
     minHeight: 480,
     show: false,
     title: APP_NAME,
+    icon: join(__dirname, '../../resources/icon.png'),
     frame: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
@@ -39,6 +41,13 @@ function createMainWindow(): BrowserWindow {
 
   win.on('ready-to-show', () => {
     win.show()
+  })
+
+  win.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      win.hide()
+    }
   })
 
   win.webContents.setWindowOpenHandler((details) => {
@@ -98,6 +107,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 app.on('will-quit', () => {

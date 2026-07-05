@@ -9,6 +9,7 @@ directories:
 files:
   - out/**/*
   - "!out/**/*.map"
+  - resources/icon.png
 
 extraResources:
   - from: templates

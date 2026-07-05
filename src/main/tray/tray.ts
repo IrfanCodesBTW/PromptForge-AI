@@ -11,7 +11,7 @@ let tray: Tray | null = null
 export function setupTray(mainWindow: BrowserWindow): void {
   // Create a simple tray icon (16x16)
   // In production, use a proper icon from resources/
-  const iconPath = join(__dirname, '../../resources/icon.png')
+  const iconPath = join(__dirname, '../../../resources/icon.png')
   let icon: Electron.NativeImage
 
   try {

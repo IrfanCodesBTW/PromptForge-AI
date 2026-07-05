@@ -288,7 +288,7 @@ export function registerIpcHandlers(
         win.isMaximized() ? win.unmaximize() : win.maximize()
         break
       case 'close':
-        win.close()
+        win.hide()
         break
     }
   })

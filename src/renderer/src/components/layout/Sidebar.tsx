@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Settings, Clock, FileText } from 'lucide-react'
+import { Logo } from '../ui/Logo'
 
 const navItems = [
   { to: '/settings', label: 'Settings', icon: Settings },
@@ -10,8 +11,15 @@ const navItems = [
 export function Sidebar(): JSX.Element {
   return (
     <aside className="w-[220px] flex-shrink-0 bg-surface border-r border-border flex flex-col select-none">
-      <div className="p-lg">
-        <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider font-sans">
+      <div className="p-lg flex items-center gap-sm border-b border-border/60 mb-sm">
+        <Logo size={24} />
+        <div>
+          <h1 className="text-sm font-semibold text-text-primary leading-none">PromptForge AI</h1>
+          <p className="text-[10px] text-text-muted mt-xs">Local Prompt Toolkit</p>
+        </div>
+      </div>
+      <div className="p-md">
+        <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider font-sans px-sm">
           Navigation
         </h2>
       </div>
