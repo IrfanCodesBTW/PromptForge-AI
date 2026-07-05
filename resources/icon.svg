@@ -1,0 +1,9 @@
+<!-- PromptForge AI placeholder icon -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" rx="32" fill="#0F1419"/>
+  <rect x="16" y="16" width="224" height="224" rx="24" fill="#1A2332"/>
+  <path d="M128 56L180 104L128 152L76 104Z" fill="#3B82F6" opacity="0.8"/>
+  <path d="M128 80L160 104L128 128L96 104Z" fill="#60A5FA"/>
+  <circle cx="128" cy="176" r="16" fill="#3B82F6"/>
+  <circle cx="128" cy="176" r="8" fill="#F1F5F9"/>
+</svg>

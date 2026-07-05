@@ -1,0 +1,48 @@
+appId: com.promptforge.ai
+productName: PromptForge AI
+copyright: Copyright © 2024 PromptForge
+
+directories:
+  buildResources: resources
+  output: dist
+
+files:
+  - out/**/*
+  - "!out/**/*.map"
+
+extraResources:
+  - from: templates
+    to: templates
+  - from: migrations
+    to: migrations
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: PromptForge AI
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: resources/icon.icns
+  category: public.app-category.productivity
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: resources/icon.png
+  category: Utility
+
+publish:
+  provider: github
+  owner: promptforge
+  repo: promptforge-ai

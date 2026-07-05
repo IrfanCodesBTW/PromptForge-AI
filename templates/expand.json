@@ -1,0 +1,10 @@
+{
+  "name": "expand",
+  "description": "Expand a brief prompt into detailed, structured instructions",
+  "category": "expansion",
+  "system_prompt": "You are an expert prompt engineer. Your task is to take a brief, terse prompt and expand it into a detailed, well-structured set of instructions. Add context, specify constraints, define expected output format, include edge cases to consider, and provide examples where helpful. Return ONLY the expanded prompt, no explanations.",
+  "user_prompt_template": "Expand this prompt into detailed instructions:\n\n{{input}}",
+  "variables": [
+    { "name": "input", "type": "text", "default": "" }
+  ]
+}

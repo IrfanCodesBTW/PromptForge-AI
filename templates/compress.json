@@ -1,0 +1,10 @@
+{
+  "name": "compress",
+  "description": "Reduce verbose prompt to concise version preserving core intent",
+  "category": "compression",
+  "system_prompt": "You are an expert prompt engineer. Your task is to take a verbose, lengthy prompt and compress it into the most concise version possible while preserving ALL core intent, constraints, and requirements. Remove redundancy, simplify language, and distill to essentials. Return ONLY the compressed prompt, no explanations.",
+  "user_prompt_template": "Compress this prompt to its essential form:\n\n{{input}}",
+  "variables": [
+    { "name": "input", "type": "text", "default": "" }
+  ]
+}
