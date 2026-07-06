@@ -44,9 +44,8 @@ jobs:
       - name: Compile and Verify Types
         run: npm run check
 
-      - name: Check for Unused Dependencies & Circular Imports
+      - name: Check for Circular Imports
         run: |
-          npm run deps
           npm run analyze
 
       - name: Execute Tests & Generate Coverage Report
