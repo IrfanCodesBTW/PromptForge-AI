@@ -45,5 +45,5 @@ linux:
 
 publish:
   provider: github
-  owner: promptforge
-  repo: promptforge-ai
+  owner: IrfanCodesBTW
+  repo: PromptForge-AI
