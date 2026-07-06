@@ -9,3 +9,4 @@ dist/
 promptforge.config.json
 coverage/
 sbom.json
+*.exe
