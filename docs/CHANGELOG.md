@@ -5,6 +5,13 @@ All notable changes to PromptForge AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v1.2.0...promptforge-ai-v1.2.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* correct electron-builder publish repo details and skip auto-publish ([9c7f95a](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/9c7f95a6b9ddd050ba67f9dc8877e2d5a22e585b))
+
 ## [1.2.0](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v1.1.0...promptforge-ai-v1.2.0) (2026-07-06)
 
 
