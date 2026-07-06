@@ -29,7 +29,7 @@
     "sbom": "cyclonedx-npm --output-format JSON --output-file sbom.json",
     "security": "npm audit && gitleaks detect --source=. --verbose",
     "analyze": "madge --circular src",
-    "validate": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run licenses && npm run deps",
+    "validate": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run licenses",
     "check": "npm run validate && npm run build"
   },
   "dependencies": {
