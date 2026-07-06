@@ -11,6 +11,9 @@
     "composite": true,
     "outDir": "./out",
     "baseUrl": ".",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
       "@main/*": ["src/main/*"],
       "@services/*": ["src/services/*"],

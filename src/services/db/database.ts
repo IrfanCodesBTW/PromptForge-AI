@@ -157,8 +157,8 @@ class PreparedStatement {
       const changesResult = this.db.exec('SELECT changes() as c')
       const rowidResult = this.db.exec('SELECT last_insert_rowid() as r')
       return {
-        changes: changesResult[0]?.values[0]?.[0] as number || 0,
-        lastInsertRowid: rowidResult[0]?.values[0]?.[0] as number || 0
+        changes: (changesResult[0]?.values[0]?.[0] as number) || 0,
+        lastInsertRowid: (rowidResult[0]?.values[0]?.[0] as number) || 0
       }
     } catch (error) {
       console.error('[DB] run() error:', error, 'SQL:', this.sql)
@@ -226,22 +226,30 @@ export async function initDatabaseAsync(): Promise<DatabaseWrapper> {
 
   // Run migrations
   runMigrations(wrapper)
-  
+
   // Patch old legacy groq models
-  wrapper.prepare(`
+  wrapper
+    .prepare(
+      `
     UPDATE providers 
     SET default_model = 'llama-3.1-8b-instant' 
     WHERE name = 'groq' 
     AND (default_model = 'llama-3.1-70b-versatile' OR default_model = 'mixtral-8x7b-32768')
-  `).run()
+  `
+    )
+    .run()
 
   // Patch ollama localhost to 127.0.0.1 to avoid IPv6 issues on Windows
-  wrapper.prepare(`
+  wrapper
+    .prepare(
+      `
     UPDATE providers 
     SET base_url = 'http://127.0.0.1:11434' 
     WHERE name = 'ollama' 
     AND base_url = 'http://localhost:11434'
-  `).run()
+  `
+    )
+    .run()
 
   // Cleanup old data
   cleanupOldHistory(wrapper)
@@ -262,9 +270,7 @@ export function initDatabase(): DatabaseWrapper {
   if (dbInstance) return dbInstance
 
   // This is a fallback — in practice, initDatabaseAsync should be called first
-  throw new Error(
-    'Database not initialized. Call initDatabaseAsync() first in app.whenReady().'
-  )
+  throw new Error('Database not initialized. Call initDatabaseAsync() first in app.whenReady().')
 }
 
 /**
@@ -312,9 +318,9 @@ function runMigrations(db: DatabaseWrapper): void {
     );
   `)
 
-  const currentVersionRow = db.prepare(
-    'SELECT COALESCE(MAX(version), 0) as version FROM schema_version'
-  ).get() as { version: number } | undefined
+  const currentVersionRow = db
+    .prepare('SELECT COALESCE(MAX(version), 0) as version FROM schema_version')
+    .get() as { version: number } | undefined
 
   const currentVersion = currentVersionRow?.version ?? 0
 
@@ -375,7 +381,9 @@ function runMigrations(db: DatabaseWrapper): void {
   }
 
   if (applied > 0) {
-    console.log(`[DB] ${applied} migration(s) applied. Current version: ${currentVersion + applied}`)
+    console.log(
+      `[DB] ${applied} migration(s) applied. Current version: ${currentVersion + applied}`
+    )
   } else {
     console.log(`[DB] Schema up to date (version ${currentVersion})`)
   }

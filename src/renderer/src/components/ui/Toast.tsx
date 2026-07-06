@@ -41,11 +41,11 @@ const typeConfig = {
   warning: { icon: AlertTriangle, color: 'text-warning' },
   info: { icon: Info, color: 'text-primary' }
 }
- 
+
 function Toast({ toast }: { toast: ToastData }) {
   const config = typeConfig[toast.type]
   const Icon = config.icon
- 
+
   return (
     <motion.div
       layout
@@ -72,21 +72,21 @@ function Toast({ toast }: { toast: ToastData }) {
     </motion.div>
   )
 }
- 
+
 export function ToastContainer(): JSX.Element {
   const [, forceRender] = useState(0)
- 
+
   const rerender = useCallback(() => {
     forceRender((c) => c + 1)
   }, [])
- 
+
   useEffect(() => {
     listeners.push(rerender)
     return () => {
       listeners = listeners.filter((l) => l !== rerender)
     }
   }, [rerender])
- 
+
   return (
     <div className="fixed bottom-lg right-lg z-50 flex flex-col gap-sm" aria-live="polite">
       <AnimatePresence mode="popLayout">

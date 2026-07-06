@@ -47,8 +47,7 @@ export class OllamaProvider implements AIProvider {
       })
 
       const latencyMs = Date.now() - startTime
-      const tokensUsed =
-        (response.eval_count || 0) + (response.prompt_eval_count || 0)
+      const tokensUsed = (response.eval_count || 0) + (response.prompt_eval_count || 0)
 
       return {
         text: response.message.content,
@@ -58,9 +57,7 @@ export class OllamaProvider implements AIProvider {
         model
       }
     } catch (error) {
-      throw new Error(
-        `Ollama error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+      throw new Error(`Ollama error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

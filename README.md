@@ -2,234 +2,260 @@
 
 # ⚡ PromptForge AI
 
-**Enhance any prompt, from any app, with a single hotkey.**
+### Enhance any prompt, from any application, with a single global hotkey.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](#installation)
-[![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](./docs/CHANGELOG.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet.svg)](./docs/CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## What is PromptForge AI?
+PromptForge AI is an enterprise-grade, local-first desktop application that supercharges your prompt engineering workflow. Highlight text in any application (e.g. VS Code, Slack, Chrome), press a global hotkey, and instantly get back a formatted, optimized prompt on your clipboard. 
 
-PromptForge AI is a local-first desktop application that supercharges your AI prompts without breaking your flow. Select any text in any application, trigger a global hotkey, and instantly receive an optimized, context-aware prompt — all processed locally or through your preferred AI provider. No copy-pasting between apps, no context switching, no data leaving your machine unless you choose otherwise.
+All settings, templates, and history are kept locally in a secure SQLite database. Cloud APIs are accessed directly from your machine with safely encrypted keys.
 
 ---
 
 ## ✨ Key Features
 
-- **🌐 System-Wide Hotkeys** — Trigger prompt enhancement from any application with customizable global shortcuts
-- **🔒 Local-First Privacy** — All data stored locally in SQLite; your prompts never leave your machine unless you opt in to cloud providers
-- **🤖 Multiple AI Providers** — Seamless support for Ollama (local), Groq, OpenAI, Gemini, Anthropic, and OpenRouter
-- **🧠 Smart Context Detection** — Automatically detects the source application and adjusts enhancement strategies accordingly
-- **📝 Prompt Templates** — Create, save, and share reusable prompt templates for common workflows
-- **📜 Prompt History** — Full searchable history with before/after comparisons and usage analytics
-- **🎯 Floating Command Palette** — A beautiful, minimal overlay that appears exactly where you need it
-- **🔌 Extensible Architecture** — Plugin-ready design with a local Fastify API and MCP protocol support
+- **🌐 Universal System Hotkeys**: Instantly capture selections from any active window and overwrite or copy back the result.
+- **🔒 Local-First & Private**: Local history search (FTS5) and templates. API keys are safely encrypted using Electron's `safeStorage`.
+- **🤖 Native Provider Integrations**: Out-of-the-box support for Ollama (local offline), Groq, OpenAI, and OpenRouter, with active fallback routing.
+- **📝 Custom & Built-In Templates**: Easily create, interpolate, and execute custom prompt templates.
+- **📊 Structed Local Logger & Diagnostics**: Embedded `doctor` script verifies environment health; crash reports catch unhandled states.
+- **🧪 Production-Ready Validation**: Strict quality gates in CI/CD, 90%+ unit test coverage, Axe accessibility audits, and mutation tests.
 
 ---
 
-<!-- demo gif here -->
+## 🏗️ Architecture & Data Flow
+
+PromptForge AI divides responsibility into an isolated Main process (Node.js/APIs/Hotkeys), a secure Preload bridge, and a sandboxed React UI.
+
+### Component Architecture
+
+```mermaid
+graph TD
+    subgraph Host OS
+        Clipboard[OS Clipboard]
+        Hotkeys[OS Global Hotkeys]
+    end
+
+    subgraph Electron Main Process
+        Main[Main Entry]
+        HKMgr[Hotkey Manager]
+        IpcHandlers[IPC Handlers]
+        DB[SQLite WASM sql.js]
+        Router[AI Provider Router]
+        CrashRep[Crash Reporter]
+    end
+
+    subgraph Preload Bridge
+        Preload[Context Bridge api]
+    end
+
+    subgraph Electron Renderer Process
+        ReactApp[React App UI]
+        ZStore[Zustand Stores]
+    end
+
+    Hotkeys -->|Triggers| HKMgr
+    HKMgr -->|Simulates Copy| Clipboard
+    HKMgr -->|Invokes| Router
+    Router -->|Queries| DB
+    IpcHandlers -->|Reads/Writes| DB
+    Preload -->|IPC channel| IpcHandlers
+    ZStore -->|Invokes| Preload
+    ReactApp -->|Uses| ZStore
+```
+
+### Execution Sequence (Headless Enhancement Loop)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    User->>OS: Press Ctrl+Shift+E
+    OS->>HotkeyManager: Trigger Shortcut Event
+    HotkeyManager->>OS: Copy Selected Text (Ctrl+C Simulation)
+    OS-->>HotkeyManager: selected text returned in Clipboard
+    HotkeyManager->>PromptEngine: enhance(text, mode)
+    PromptEngine->>SQLite: Get Active Provider & Key
+    SQLite-->>PromptEngine: Provider Config (e.g., Groq / Llama3.1)
+    PromptEngine->>AI Provider: Send Prompt API Request
+    AI Provider-->>PromptEngine: Enhanced Prompt Output
+    PromptEngine->>SQLite: Log entry in history
+    PromptEngine-->>HotkeyManager: Enhanced Output
+    HotkeyManager->>OS: Write to Clipboard (Ctrl+V Simulation)
+    HotkeyManager->>Renderer: Dispatch Event (Update UI/Toast)
+```
 
 ---
 
-## 🚀 Installation
+## 📁 Repository Structure
+
+```
+├── .github/                  # GitHub Actions, Issue forms & Community standards
+├── .vscode/                  # Shared VSCode debuggers, settings, & recommendations
+├── docs/                     # System specifications & guidelines
+│   ├── design/               # UI design system tokens, typography & motion guidelines
+│   ├── API.md                # Local Fastify API documentation
+│   ├── ARCHITECTURE.md       # Technical design patterns & structures
+│   ├── DATABASE_SCHEMA.md    # SQLite tables & indexes
+│   └── CONTRIBUTING.md       # Guidelines for code contributions
+├── migrations/               # SQLite database schemas and migrations
+├── resources/                # App installer icons & resource media
+├── scripts/                  # Onboarding diagnostics & SBOM generators
+├── src/
+│   ├── main/                 # Electron Main Process (system events, IPC, tray)
+│   ├── preload/              # Secure Electron Context Bridge API
+│   ├── renderer/             # React/Tailwind UI & state stores
+│   ├── services/             # Core business logic (DB services, AI adapters)
+│   └── shared/               # Shared constants, Zod validations, & types
+├── tests/                    # Testing suites
+│   ├── unit/                 # Vitest isolated business logic tests
+│   ├── integration/          # SQLite database & router fallback integration tests
+│   └── e2e/                  # Playwright browser & Electron accessibility tests
+├── package.json              # Project scripts and configurations
+└── eslint.config.js          # ESLint flat config definition
+```
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-| Requirement | Version | Notes |
-|-------------|---------|-------|
-| Node.js | 20+ | [Download](https://nodejs.org/) |
-| pnpm | 8+ | `npm install -g pnpm` |
-| Git | Latest | [Download](https://git-scm.com/) |
-| Ollama | Latest | Optional — for local AI inference ([Download](https://ollama.ai/)) |
+| Requirement | Version | Purpose |
+|---|---|---|
+| **Node.js** | `>= 20.0.0` | Runtime environment |
+| **npm** | `>= 9.0.0` | Package manager |
+| **Ollama** | Latest | (Optional) Local offline inference |
 
-### Quick Start
+### Developer Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/PromptForgeAI.git
-cd PromptForgeAI
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/IrfanCodesBTW/PromptForge-AI.git
+   cd PromptForge-AI
+   ```
 
-# Install dependencies
-pnpm install
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-# Start in development mode
-pnpm dev
-```
+3. **Verify Environment Health:**
+   ```bash
+   npm run doctor
+   ```
 
-### Build for Production
+4. **Start in Development Mode:**
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# Build the application
-pnpm build
-
-# Package for your platform
-pnpm package
-```
+5. **Build & Package Installers:**
+   ```bash
+   # Build production assets
+   npm run build
+   
+   # Compile installers (Windows, macOS, Linux)
+   npm run package
+   ```
 
 ---
 
 ## ⚙️ Configuration
 
-### AI Providers
-
-Configure your preferred AI providers in **Settings → Providers** or edit the config file directly:
-
-```jsonc
-// config.json
-{
-  "providers": {
-    "ollama": {
-      "enabled": true,
-      "baseUrl": "http://localhost:11434",
-      "model": "llama3.1"
-    },
-    "groq": {
-      "enabled": false,
-      "apiKey": "gsk_...",
-      "model": "llama-3.1-70b-versatile"
-    },
-    "openai": {
-      "enabled": false,
-      "apiKey": "sk-...",
-      "model": "gpt-4o"
-    },
-    "gemini": {
-      "enabled": false,
-      "apiKey": "...",
-      "model": "gemini-1.5-pro"
-    },
-    "anthropic": {
-      "enabled": false,
-      "apiKey": "sk-ant-...",
-      "model": "claude-sonnet-4-20250514"
-    },
-    "openrouter": {
-      "enabled": false,
-      "apiKey": "sk-or-...",
-      "model": "auto"
-    }
-  }
-}
+Copy `.env.example` to `.env` to configure cloud providers:
+```bash
+cp .env.example .env
 ```
 
-> **Tip:** For fully offline usage, install [Ollama](https://ollama.ai/) and pull a model: `ollama pull llama3.1`
-
-### Hotkey Customization
-
-Override default hotkeys in **Settings → Hotkeys** or via config:
-
-```jsonc
-{
-  "hotkeys": {
-    "enhance": "Ctrl+Shift+E",
-    "expand": "Ctrl+Shift+X",
-    "compress": "Ctrl+Shift+C",
-    "palette": "Ctrl+Shift+P"
-  }
-}
-```
+| Environment Variable | Description |
+|---|---|
+| `GROQ_API_KEY` | Key for high-speed Groq inference |
+| `OPENAI_API_KEY` | Key for OpenAI models |
+| `OPENROUTER_API_KEY` | Key for OpenRouter endpoint |
+| `GEMINI_API_KEY` | Key for Google Gemini API |
+| `ANTHROPIC_API_KEY` | Key for Anthropic Claude |
 
 ---
 
-## ⌨️ Default Hotkeys
+## ⌨️ Global Hotkeys
 
 | Shortcut | Action | Description |
-|----------|--------|-------------|
-| `Ctrl+Shift+E` | **Enhance** | Optimize the selected prompt for clarity and effectiveness |
-| `Ctrl+Shift+X` | **Expand** | Expand a brief prompt into a detailed, comprehensive version |
-| `Ctrl+Shift+C` | **Compress** | Condense a verbose prompt into a concise version |
-| `Ctrl+Shift+P` | **Command Palette** | Open the floating command palette for all actions |
-| `Ctrl+Shift+T` | **Templates** | Quick access to saved prompt templates |
-| `Ctrl+Shift+H` | **History** | Browse recent prompt enhancements |
-| `Escape` | **Dismiss** | Close the floating palette or cancel current action |
+|---|---|---|
+| `Ctrl+Shift+E` | **Enhance** | Optimizes highlighted text for clarity and structure |
+| `Ctrl+Shift+X` | **Expand** | Expands rough notes into detailed instructions |
+| `Ctrl+Shift+K` | **Compress** | Distills long prompts down to their essential tokens |
+| `Ctrl+Shift+P` | **Palette** | Launches the floating command palette overlay |
+| `Escape` | **Dismiss** | Hides palette overlay or cancels active runs |
 
-> On macOS, replace `Ctrl` with `Cmd`.
+*Note: On macOS, substitute `Ctrl` with `Cmd`.*
 
 ---
 
-## 🖥️ Supported Applications
+## 🧪 Testing and Validation
 
-PromptForge AI works with **any application** that supports text selection and clipboard operations:
+All tests are validated against strict quality gates in CI/CD.
 
-| Category | Applications |
-|----------|-------------|
-| **Code Editors** | VS Code, Cursor, JetBrains IDEs (IntelliJ, WebStorm, PyCharm, etc.) |
-| **Browsers** | Chrome, Firefox, Edge, Brave, Arc |
-| **Communication** | Slack, Discord, Teams, Telegram |
-| **Productivity** | Microsoft Word, Obsidian, Notion, Google Docs |
-| **AI Chat UIs** | ChatGPT, Claude, Gemini, any web-based AI interface |
-| **Other** | Any application with an editable text field |
+```bash
+# Run unit & integration tests
+npm test
 
----
+# Generate coverage reports (Target: 90%+)
+npm run coverage
 
-## 🏗️ Architecture
+# Run circular dependency checks
+npm run analyze
 
-PromptForge AI is built on a modern Electron + React + TypeScript + Vite stack with a clear separation of concerns:
+# Run Playwright E2E and Axe accessibility tests
+npx playwright test
 
-```
-┌─────────────────────────────────────────┐
-│           Electron Main Process          │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ │
-│  │ Hotkeys │ │ Fastify  │ │ SQLite   │ │
-│  │ Manager │ │ API      │ │ Database │ │
-│  └─────────┘ └──────────┘ └──────────┘ │
-├─────────────────────────────────────────┤
-│         Electron Renderer (React)        │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ │
-│  │ Command │ │ Settings │ │ History  │ │
-│  │ Palette │ │ Panel    │ │ View     │ │
-│  └─────────┘ └──────────┘ └──────────┘ │
-├─────────────────────────────────────────┤
-│            AI Provider Layer             │
-│  Ollama │ Groq │ OpenAI │ Gemini │ ... │
-└─────────────────────────────────────────┘
+# Check for unused exports and code dependencies
+npm run deps
+
+# Check third-party dependency licenses
+npm run licenses
+
+# Run full preflight verification suite
+npm run validate
 ```
 
-For a detailed breakdown of the architecture, modules, and data flow, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+---
+
+## 🛡️ Security Policy
+
+PromptForge AI is built with enterprise security defaults:
+- **Sandbox Enabled**: Renderer processes run in a fully sandboxed context.
+- **Context Isolation**: Window scripts cannot cross into Node.js runtime globals.
+- **IPC Input Validation**: All arguments entering main process IPC listeners are validated using Zod.
+- **API Key Encryption**: Keys stored in SQLite are encrypted on disk via Electron's `safeStorage`.
+- **Secret Scanning**: Gitleaks triggers on pre-commits and CI pipelines to prevent credential commits.
 
 ---
 
-## 📚 Documentation
+## ❓ FAQ & Troubleshooting
 
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, module design, and data flow |
-| [TECH_STACK.md](./TECH_STACK.md) | Technology choices and rationale |
-| [FEATURES.md](./FEATURES.md) | Detailed feature specifications |
-| [DESIGN.md](./DESIGN.md) | UI/UX design system and guidelines |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | SQLite schema and migration strategy |
-| [API.md](./API.md) | Local Fastify HTTP API reference |
-| [MCP.md](./MCP.md) | Model Context Protocol integration |
-| [ROADMAP.md](./ROADMAP.md) | Development roadmap and milestones |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines |
-| [CHANGELOG.md](./CHANGELOG.md) | Version history and release notes |
+### Why is copy/paste simulation not working on Linux?
+Ensure you have `xdotool` and `xclip` installed on your host system:
+```bash
+sudo apt install xdotool xclip
+```
 
----
+### How are default templates loaded?
+Default templates are automatically loaded into the SQLite database during the migration process at startup. You can customize them or add your own in the **Templates** view.
 
-## 🤝 Contributing
-
-Contributions are welcome! Whether it's bug reports, feature requests, documentation improvements, or code contributions — we appreciate your help.
-
-Please read our **[Contributing Guide](./CONTRIBUTING.md)** for details on:
-- Code of Conduct
-- Development setup
-- Pull request process
-- Coding standards
+### Where are logs located?
+- **Windows**: `%APPDATA%/promptforge-ai/logs/app.log`
+- **macOS**: `~/Library/Application Support/promptforge-ai/logs/app.log`
+- **Linux**: `~/.config/promptforge-ai/logs/app.log`
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
-
----
-
-<div align="center">
-
-**Built with ❤️ for prompt engineers who refuse to leave their flow.**
-
-</div>
+Licensed under the [MIT License](./LICENSE).

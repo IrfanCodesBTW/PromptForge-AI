@@ -7,3 +7,5 @@ dist/
 .env
 .env.local
 promptforge.config.json
+coverage/
+sbom.json

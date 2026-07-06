@@ -81,9 +81,7 @@ export class HistoryService {
     // Build WHERE clause from filters
     if (filter.search) {
       // Use LIKE for text search
-      conditions.push(
-        `(ph.original_text LIKE ? OR ph.enhanced_text LIKE ?)`
-      )
+      conditions.push(`(ph.original_text LIKE ? OR ph.enhanced_text LIKE ?)`)
       const searchParam = `%${filter.search}%`
       params.push(searchParam, searchParam)
     }

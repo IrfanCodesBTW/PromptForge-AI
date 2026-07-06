@@ -1,0 +1,12 @@
+name: ❓ Q&A
+description: Ask the community or maintainers questions about using PromptForge AI.
+title: "[Question] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Provide details about your question or what you're trying to figure out.
+      placeholder: Ask anything...
+    validations:
+      required: true

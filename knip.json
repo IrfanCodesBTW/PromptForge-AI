@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@next/schema.json",
+  "entry": [
+    "src/main/index.ts!",
+    "src/preload/index.ts!",
+    "src/renderer/src/main.tsx!",
+    "scripts/doctor.ts!",
+    "tests/unit/**/*.test.ts!",
+    "tests/integration/**/*.test.ts!",
+    "eslint.config.js!",
+    "vitest.config.ts!"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "tests/**/*.ts"],
+  "ignoreDependencies": [
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-plugin-react",
+    "eslint-plugin-react-hooks",
+    "eslint-plugin-jsx-a11y",
+    "vitest",
+    "@vitest/coverage-v8",
+    "@commitlint/cli",
+    "@commitlint/config-conventional",
+    "husky",
+    "lint-staged",
+    "gitleaks",
+    "typescript",
+    "vite",
+    "electron"
+  ],
+  "ignoreExportsUsedInFile": true
+}

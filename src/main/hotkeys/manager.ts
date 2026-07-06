@@ -88,9 +88,11 @@ export class HotkeyManager {
       const result = await this.engine.enhance(selectedText, mode)
 
       // Step 3: Write result to clipboard and optionally paste
-      const row = this.db.prepare("SELECT value FROM settings WHERE key = 'clipboard_auto_paste'").get() as { value: string } | undefined
+      const row = this.db
+        .prepare("SELECT value FROM settings WHERE key = 'clipboard_auto_paste'")
+        .get() as { value: string } | undefined
       const autoPaste = row?.value === 'true'
-      
+
       if (autoPaste) {
         await writeAndPaste(result.text)
       } else {

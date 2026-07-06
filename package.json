@@ -14,11 +14,23 @@
     "package:mac": "electron-builder --mac",
     "package:linux": "electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
-    "lint": "eslint . --ext .ts,.tsx",
+    "clean": "rimraf out dist coverage sbom.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "doctor": "ts-node scripts/doctor.ts",
+    "deps": "knip",
+    "licenses": "license-checker-rseidelsohn --production --summary",
+    "sbom": "cyclonedx-npm --output-format JSON --output-file sbom.json",
+    "security": "npm audit && gitleaks detect --source=. --verbose",
+    "analyze": "madge --circular src",
+    "validate": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run licenses && npm run deps",
+    "check": "npm run validate && npm run build"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -34,26 +46,55 @@
     "react-dom": "18.3.1",
     "react-router-dom": "6.28.0",
     "sql.js": "^1.11.0",
+    "zod": "3.25.76",
     "zustand": "4.5.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@commitlint/cli": "19.8.1",
+    "@commitlint/config-conventional": "19.8.1",
+    "@cyclonedx/cyclonedx-npm": "1.20.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
+    "@playwright/test": "1.61.1",
+    "@stryker-mutator/core": "8.7.1",
+    "@stryker-mutator/vitest-runner": "8.7.1",
     "@testing-library/react": "^14.3.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "8.57.0",
+    "@typescript-eslint/parser": "8.57.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "1.6.0",
     "autoprefixer": "^10.4.20",
     "electron": "^30.5.1",
     "electron-builder": "^24.13.3",
     "electron-vite": "^2.3.0",
     "eslint": "^8.57.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "husky": "9.1.7",
+    "knip": "5.88.1",
+    "license-checker-rseidelsohn": "4.4.2",
+    "lint-staged": "15.5.2",
+    "madge": "7.0.0",
     "postcss": "^8.4.49",
     "prettier": "^3.3.3",
+    "rimraf": "5.0.10",
     "tailwindcss": "^3.4.16",
+    "ts-node": "10.9.2",
     "typescript": "^5.4.5",
     "vite": "^5.4.11",
     "vitest": "^1.6.0"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.css": [
+      "prettier --write"
+    ]
   }
 }

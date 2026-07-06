@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "promptforge-ai",
+      "changelog-path": "docs/CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-pre-major": true,
+      "draft": false,
+      "prerelease": false
+    }
+  },
+  "plugins": []
+}

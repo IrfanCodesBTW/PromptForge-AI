@@ -65,34 +65,34 @@ export class ProviderRouter {
             this.fallbackOrder.push('ollama')
             break
           case 'groq':
-              this.providers.set('groq', new GroqProvider(apiKey, row.default_model))
-              break
-            case 'openai':
-              this.providers.set(
-                'openai',
-                new OpenAIProvider(apiKey, row.default_model, row.base_url)
-              )
-              break
-            case 'openrouter':
-              this.providers.set(
+            this.providers.set('groq', new GroqProvider(apiKey, row.default_model))
+            break
+          case 'openai':
+            this.providers.set(
+              'openai',
+              new OpenAIProvider(apiKey, row.default_model, row.base_url)
+            )
+            break
+          case 'openrouter':
+            this.providers.set(
+              'openrouter',
+              new OpenAIProvider(
+                apiKey,
+                row.default_model,
+                row.base_url,
                 'openrouter',
-                new OpenAIProvider(
-                  apiKey,
-                  row.default_model,
-                  row.base_url,
-                  'openrouter',
-                  'OpenRouter'
-                )
+                'OpenRouter'
               )
-              break
-            default:
-              // Custom OpenAI-compatible provider
-              this.providers.set(
-                row.name,
-                new OpenAIProvider(apiKey, row.default_model, row.base_url, row.name, row.name)
-              )
-          }
-          this.fallbackOrder.push(row.name)
+            )
+            break
+          default:
+            // Custom OpenAI-compatible provider
+            this.providers.set(
+              row.name,
+              new OpenAIProvider(apiKey, row.default_model, row.base_url, row.name, row.name)
+            )
+        }
+        this.fallbackOrder.push(row.name)
       }
     } catch (error) {
       console.warn('[Router] Failed to load providers from DB:', error)

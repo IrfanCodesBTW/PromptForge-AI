@@ -1,0 +1,12 @@
+# ====================================================
+# PromptForge AI — Issue Template Configuration
+# ====================================================
+
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/IrfanCodesBTW/PromptForge-AI/discussions/new?category=q-a
+    about: Ask a question or get help using the application.
+  - name: Share an idea
+    url: https://github.com/IrfanCodesBTW/PromptForge-AI/discussions/new?category=ideas
+    about: Propose a new idea or suggestion for the community.

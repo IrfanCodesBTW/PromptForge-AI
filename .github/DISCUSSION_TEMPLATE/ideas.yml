@@ -1,0 +1,12 @@
+name: 💡 Ideas
+description: Share and discuss ideas for new features or improvements.
+title: "[Idea] "
+body:
+  - type: textarea
+    id: idea-description
+    attributes:
+      label: Idea Description
+      description: Provide a detailed description of your idea.
+      placeholder: Share what you're thinking...
+    validations:
+      required: true

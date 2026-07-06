@@ -1,0 +1,60 @@
+# ====================================================
+# PromptForge AI — Continuous Integration Pipeline
+# ====================================================
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, Type Check & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Workspace Dependencies
+        run: npm ci
+
+      - name: Run Onboarding Doctor Diagnostics
+        run: npm run doctor
+
+      - name: Verify Prettier Code Formatting
+        run: npm run format:check
+
+      - name: Run ESLint Linter Checks
+        run: npm run lint
+
+      - name: Compile and Verify Types
+        run: npm run check
+
+      - name: Check for Unused Dependencies & Circular Imports
+        run: |
+          npm run deps
+          npm run analyze
+
+      - name: Execute Tests & Generate Coverage Report
+        run: npm run coverage
+
+      - name: Upload Coverage Artifact to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false

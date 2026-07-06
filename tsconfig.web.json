@@ -9,6 +9,9 @@
     "outDir": "./out",
     "baseUrl": ".",
     "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
       "@renderer/*": ["src/renderer/*"],
       "@shared/*": ["src/shared/*"]

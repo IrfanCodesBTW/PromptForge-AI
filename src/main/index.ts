@@ -10,6 +10,10 @@ import { HotkeyManager } from './hotkeys/manager'
 import { registerIpcHandlers } from './ipc/handlers'
 import { initDatabaseAsync } from '../services/db/database'
 import { APP_NAME } from '../shared/constants'
+import { initializeCrashReporter, handleRendererCrashes } from './crashReporter'
+
+// Initialize native crash reporting and exceptions interception
+initializeCrashReporter()
 
 let mainWindow: BrowserWindow | null = null
 let hotkeyManager: HotkeyManager | null = null
@@ -33,11 +37,16 @@ function createMainWindow(): BrowserWindow {
     },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      allowRunningInsecureContent: false,
+      webSecurity: true
     }
   })
+
+  // Register renderer process crash handlers
+  handleRendererCrashes(win)
 
   win.on('ready-to-show', () => {
     win.show()
@@ -72,35 +81,35 @@ if (!gotTheLock) {
 } else {
   app.whenReady().then(async () => {
     // Set app user model id for windows
-  electronApp.setAppUserModelId('com.promptforge.ai')
+    electronApp.setAppUserModelId('com.promptforge.ai')
 
-  // Watch for shortcut creation on install
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+    // Watch for shortcut creation on install
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
+
+    // Initialize database
+    const db = await initDatabaseAsync()
+
+    // Register IPC handlers
+    registerIpcHandlers(db, () => hotkeyManager)
+
+    // Create main window
+    mainWindow = createMainWindow()
+
+    // Setup system tray
+    setupTray(mainWindow)
+
+    // Initialize hotkey manager
+    hotkeyManager = new HotkeyManager(db, mainWindow)
+    hotkeyManager.registerAll()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow()
+      }
+    })
   })
-
-  // Initialize database
-  const db = await initDatabaseAsync()
-
-  // Register IPC handlers
-  registerIpcHandlers(db, () => hotkeyManager)
-
-  // Create main window
-  mainWindow = createMainWindow()
-
-  // Setup system tray
-  setupTray(mainWindow)
-
-  // Initialize hotkey manager
-  hotkeyManager = new HotkeyManager(db, mainWindow)
-  hotkeyManager.registerAll()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createMainWindow()
-    }
-  })
-})
 }
 
 app.on('window-all-closed', () => {

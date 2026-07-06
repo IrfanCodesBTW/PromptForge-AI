@@ -2,8 +2,10 @@
 // PromptForge AI — IPC Handlers
 // ====================================================
 // Registers all ipcMain.handle handlers that the renderer calls.
+// Validates parameters on all incoming IPC invoke calls to prevent attacks.
 
 import { ipcMain, app, BrowserWindow } from 'electron'
+import { z } from 'zod'
 import type { DatabaseWrapper } from '../../services/db/database'
 import { IPC_CHANNELS } from '../../shared/constants'
 import { PromptEngine } from '../../services/prompt/engine'
@@ -12,8 +14,101 @@ import { TemplateService } from '../../services/db/templates'
 import { GroqProvider } from '../../services/ai/groq'
 import { OpenAIProvider } from '../../services/ai/openai'
 import { OllamaProvider } from '../../services/ai/ollama'
+import type { AIProvider } from '../../services/ai/provider'
 import type { EnhanceRequest, HistoryFilter } from '../../shared/types'
 import type { HotkeyManager } from '../hotkeys/manager'
+import logger from '../../shared/logger'
+
+// ====================================================
+// Zod Security Validation Schemas
+// ====================================================
+
+const enhanceRequestSchema = z.object({
+  text: z.string().min(1).max(50000),
+  mode: z.enum([
+    'enhance',
+    'expand',
+    'compress',
+    'explain',
+    'translate',
+    'grammar-fix',
+    'convert-prd',
+    'convert-markdown',
+    'notes-to-prompt'
+  ]),
+  templateId: z
+    .string()
+    .regex(/^[a-fA-F0-9]{32}$/)
+    .optional(),
+  provider: z.string().min(1).max(100).optional(),
+  model: z.string().min(1).max(100).optional()
+})
+
+const settingsSetSchema = z.object({
+  key: z.string().min(1).max(100),
+  value: z.string().max(1000)
+})
+
+const historyQuerySchema = z.object({
+  filter: z.object({
+    search: z.string().max(100).optional(),
+    provider: z.string().max(100).optional(),
+    category: z.string().max(100).optional(),
+    isFavorite: z.boolean().optional(),
+    dateFrom: z.string().max(50).optional(),
+    dateTo: z.string().max(50).optional()
+  }),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20)
+})
+
+const historyFavoriteSchema = z.object({
+  id: z.string().regex(/^[a-fA-F0-9]{32}$/),
+  isFavorite: z.boolean()
+})
+
+const templateCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(1000).optional(),
+  category: z.string().min(1).max(50),
+  systemPrompt: z.string().min(1).max(10000),
+  userPromptTemplate: z.string().min(1).max(10000),
+  variables: z.string().optional(),
+  isBuiltin: z.boolean().optional()
+})
+
+const templateUpdateSchema = z.object({
+  id: z.string().regex(/^[a-fA-F0-9]{32}$/),
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(1000).optional(),
+  category: z.string().min(1).max(50).optional(),
+  systemPrompt: z.string().min(1).max(10000).optional(),
+  userPromptTemplate: z.string().min(1).max(10000).optional(),
+  variables: z.any().optional(), // Can be string or parsed array
+  isActive: z.boolean().optional()
+})
+
+const providerTestSchema = z.object({
+  provider: z.string().min(1).max(100),
+  apiKey: z.string().max(1000)
+})
+
+const providerUpdateSchema = z.object({
+  provider: z.string().min(1).max(100),
+  apiKey: z.string().max(1000).optional(),
+  model: z.string().min(1).max(100).optional()
+})
+
+const hotkeyUpdateSchema = z.object({
+  id: z.string().regex(/^[a-fA-F0-9]{32}$/),
+  action: z.string().min(1).max(100),
+  keybinding: z.string().min(1).max(50),
+  is_active: z.boolean().or(z.number())
+})
+
+const windowToggleSchema = z.object({
+  action: z.enum(['minimize', 'maximize', 'close'])
+})
 
 export function registerIpcHandlers(
   db: DatabaseWrapper,
@@ -23,13 +118,21 @@ export function registerIpcHandlers(
   const history = new HistoryService(db)
   const templates = new TemplateService(db)
 
+  // Listen to Renderer logs and pipe them to local disk
+  ipcMain.on('promptforge:app:log', (_event, entry) => {
+    logger.writeToLogFile(entry)
+  })
+
   // ===== Enhancement =====
 
   ipcMain.handle(IPC_CHANNELS.ENHANCE_REQUEST, async (_event, request: EnhanceRequest) => {
-    const result = await engine.enhance(request.text, request.mode, {
-      provider: request.provider,
-      model: request.model,
-      templateId: request.templateId
+    // Validate request schema
+    const parsed = enhanceRequestSchema.parse(request)
+
+    const result = await engine.enhance(parsed.text, parsed.mode, {
+      provider: parsed.provider,
+      model: parsed.model,
+      templateId: parsed.templateId
     })
 
     return {
@@ -45,22 +148,24 @@ export function registerIpcHandlers(
   // ===== Settings =====
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_GET, (_event, key: string) => {
+    z.string().min(1).max(100).parse(key)
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
-      | { value: string }
-      | undefined
+      { value: string } | undefined
     return row?.value ?? null
   })
 
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SET, (_event, data: { key: string; value: string }) => {
+    const parsed = settingsSetSchema.parse(data)
+
     db.prepare(
       `INSERT INTO settings (key, value, type, category, updated_at)
        VALUES (?, ?, 'string', 'general', datetime('now'))
        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
-    ).run(data.key, data.value)
+    ).run(parsed.key, parsed.value)
 
     // Broadcast settings change to all windows
     BrowserWindow.getAllWindows().forEach((win) => {
-      win.webContents.send(IPC_CHANNELS.SETTINGS_CHANGED, data)
+      win.webContents.send(IPC_CHANNELS.SETTINGS_CHANGED, parsed)
     })
   })
 
@@ -81,45 +186,60 @@ export function registerIpcHandlers(
   ipcMain.handle(
     IPC_CHANNELS.HISTORY_QUERY,
     (_event, data: { filter: HistoryFilter; page: number; pageSize: number }) => {
-      return history.query(data.filter, data.page, data.pageSize)
+      const parsed = historyQuerySchema.parse(data)
+      return history.query(parsed.filter, parsed.page, parsed.pageSize)
     }
   )
 
   ipcMain.handle(IPC_CHANNELS.HISTORY_GET, (_event, id: string) => {
+    z.string()
+      .regex(/^[a-fA-F0-9]{32}$/)
+      .parse(id)
     return history.getById(id)
   })
 
   ipcMain.handle(IPC_CHANNELS.HISTORY_DELETE, (_event, ids: string[]) => {
-    history.deleteByIds(ids)
+    const parsed = z.array(z.string().regex(/^[a-fA-F0-9]{32}$/)).parse(ids)
+    history.deleteByIds(parsed)
   })
 
   ipcMain.handle(
     IPC_CHANNELS.HISTORY_FAVORITE,
     (_event, data: { id: string; isFavorite: boolean }) => {
-      history.toggleFavorite(data.id, data.isFavorite)
+      const parsed = historyFavoriteSchema.parse(data)
+      history.toggleFavorite(parsed.id, parsed.isFavorite)
     }
   )
 
   // ===== Templates =====
 
   ipcMain.handle(IPC_CHANNELS.TEMPLATE_LIST, (_event, category?: string) => {
-    return templates.list(category)
+    const validatedCategory = category ? z.string().max(100).parse(category) : undefined
+    return templates.list(validatedCategory)
   })
 
   ipcMain.handle(IPC_CHANNELS.TEMPLATE_GET, (_event, id: string) => {
+    z.string()
+      .regex(/^[a-fA-F0-9]{32}$/)
+      .parse(id)
     return templates.getById(id)
   })
 
   ipcMain.handle(IPC_CHANNELS.TEMPLATE_CREATE, (_event, data) => {
-    return templates.create(data)
+    const parsed = templateCreateSchema.parse(data)
+    return templates.create(parsed)
   })
 
   ipcMain.handle(IPC_CHANNELS.TEMPLATE_UPDATE, (_event, data: { id: string }) => {
-    const { id, ...rest } = data
+    const parsed = templateUpdateSchema.parse(data)
+    const { id, ...rest } = parsed
     templates.update(id, rest)
   })
 
   ipcMain.handle(IPC_CHANNELS.TEMPLATE_DELETE, (_event, id: string) => {
+    z.string()
+      .regex(/^[a-fA-F0-9]{32}$/)
+      .parse(id)
     templates.delete(id)
   })
 
@@ -134,30 +254,35 @@ export function registerIpcHandlers(
     return engine.getRouter().checkAllHealth()
   })
 
-  ipcMain.handle(IPC_CHANNELS.PROVIDER_MODELS, async (_event, providerName: string) => {
-    return engine.getRouter().listModels(providerName)
-  })
-
   ipcMain.handle(
     IPC_CHANNELS.PROVIDER_TEST,
     async (_event, data: { provider: string; apiKey: string }) => {
+      const parsed = providerTestSchema.parse(data)
       let provider: AIProvider | null = null
-      
-      const row = db.prepare('SELECT default_model FROM providers WHERE name = ?').get(data.provider) as { default_model: string } | undefined
+
+      const row = db
+        .prepare('SELECT default_model FROM providers WHERE name = ?')
+        .get(parsed.provider) as { default_model: string } | undefined
       const defaultModel = row?.default_model || undefined
 
-      if (data.provider === 'groq') {
-        provider = new GroqProvider(data.apiKey, defaultModel)
-      } else if (data.provider === 'openai' || data.provider === 'openrouter') {
-        provider = new OpenAIProvider(data.apiKey, defaultModel, undefined, data.provider, data.provider)
+      if (parsed.provider === 'groq') {
+        provider = new GroqProvider(parsed.apiKey, defaultModel)
+      } else if (parsed.provider === 'openai' || parsed.provider === 'openrouter') {
+        provider = new OpenAIProvider(
+          parsed.apiKey,
+          defaultModel,
+          undefined,
+          parsed.provider,
+          parsed.provider
+        )
       }
 
       if (!provider) {
-        return { name: data.provider, status: 'offline', lastChecked: new Date().toISOString() }
+        return { name: parsed.provider, status: 'offline', lastChecked: new Date().toISOString() }
       }
       const available = await provider.isAvailable()
       return {
-        name: data.provider,
+        name: parsed.provider,
         status: available ? 'healthy' : 'offline',
         lastChecked: new Date().toISOString()
       }
@@ -168,64 +293,99 @@ export function registerIpcHandlers(
     IPC_CHANNELS.PROVIDER_UPDATE,
     async (_event, data: { provider: string; apiKey?: string; model?: string }) => {
       try {
+        const parsed = providerUpdateSchema.parse(data)
         const { safeStorage } = require('electron')
-        let encryptedKey = data.apiKey
-        if (data.apiKey && safeStorage && safeStorage.isEncryptionAvailable && safeStorage.isEncryptionAvailable()) {
-          const buffer = safeStorage.encryptString(data.apiKey)
+        let encryptedKey = parsed.apiKey
+        if (
+          parsed.apiKey &&
+          safeStorage &&
+          safeStorage.isEncryptionAvailable &&
+          safeStorage.isEncryptionAvailable()
+        ) {
+          const buffer = safeStorage.encryptString(parsed.apiKey)
           encryptedKey = buffer.toString('base64')
         }
 
-        const existing = db.prepare('SELECT id FROM providers WHERE name = ?').get(data.provider)
-        
+        const existing = db.prepare('SELECT id FROM providers WHERE name = ?').get(parsed.provider)
+
         if (existing) {
-          if (data.apiKey !== undefined) {
-             db.prepare('UPDATE providers SET api_key_encrypted = ?, is_active = 1 WHERE name = ?').run(encryptedKey, data.provider)
+          if (parsed.apiKey !== undefined) {
+            db.prepare(
+              'UPDATE providers SET api_key_encrypted = ?, is_active = 1 WHERE name = ?'
+            ).run(encryptedKey, parsed.provider)
           }
-          if (data.model !== undefined) {
-             db.prepare('UPDATE providers SET default_model = ?, is_active = 1 WHERE name = ?').run(data.model, data.provider)
+          if (parsed.model !== undefined) {
+            db.prepare('UPDATE providers SET default_model = ?, is_active = 1 WHERE name = ?').run(
+              parsed.model,
+              parsed.provider
+            )
           }
         } else {
           let baseUrl = ''
-          let defaultModel = data.model || ''
+          let defaultModel = parsed.model || ''
           if (!defaultModel) {
-            if (data.provider === 'groq') defaultModel = 'llama-3.1-8b-instant'
-            if (data.provider === 'openai') {
-               baseUrl = 'https://api.openai.com/v1'
-               defaultModel = 'gpt-4o'
+            if (parsed.provider === 'groq') defaultModel = 'llama-3.1-8b-instant'
+            if (parsed.provider === 'openai') {
+              baseUrl = 'https://api.openai.com/v1'
+              defaultModel = 'gpt-4o'
             }
-            if (data.provider === 'openrouter') {
-               baseUrl = 'https://openrouter.ai/api/v1'
-               defaultModel = 'anthropic/claude-3.5-sonnet'
+            if (parsed.provider === 'openrouter') {
+              baseUrl = 'https://openrouter.ai/api/v1'
+              defaultModel = 'anthropic/claude-3.5-sonnet'
             }
           }
-          db.prepare('INSERT INTO providers (name, type, base_url, api_key_encrypted, default_model, is_active, priority) VALUES (?, ?, ?, ?, ?, 1, 50)').run(
-            data.provider, data.provider === 'ollama' ? 'local' : 'cloud', baseUrl, encryptedKey, defaultModel
+          db.prepare(
+            'INSERT INTO providers (name, type, base_url, api_key_encrypted, default_model, is_active, priority) VALUES (?, ?, ?, ?, ?, 1, 50)'
+          ).run(
+            parsed.provider,
+            parsed.provider === 'ollama' ? 'local' : 'cloud',
+            baseUrl,
+            encryptedKey,
+            defaultModel
           )
         }
         db.save()
 
         // Fetch the default model to properly initialize the new provider
-        const row = db.prepare('SELECT default_model, api_key_encrypted FROM providers WHERE name = ?').get(data.provider) as { default_model: string, api_key_encrypted: string | null } | undefined
+        const row = db
+          .prepare('SELECT default_model, api_key_encrypted FROM providers WHERE name = ?')
+          .get(parsed.provider) as
+          { default_model: string; api_key_encrypted: string | null } | undefined
         const defaultModel = row?.default_model || undefined
-        
-        let apiKeyForInit = data.apiKey
+
+        let apiKeyForInit = parsed.apiKey
         if (apiKeyForInit === undefined && row?.api_key_encrypted) {
-           const { safeStorage } = require('electron')
-           try {
-             apiKeyForInit = safeStorage.decryptString(Buffer.from(row.api_key_encrypted, 'base64'))
-           } catch {
-             apiKeyForInit = row.api_key_encrypted
-           }
+          const { safeStorage: ss } = require('electron')
+          try {
+            apiKeyForInit = ss.decryptString(Buffer.from(row.api_key_encrypted, 'base64'))
+          } catch {
+            apiKeyForInit = row.api_key_encrypted
+          }
         }
 
-        if (data.provider === 'groq') {
-          engine.getRouter().registerProvider('groq', new GroqProvider(apiKeyForInit || '', defaultModel))
-        } else if (data.provider === 'openai' || data.provider === 'openrouter') {
-          engine.getRouter().registerProvider(data.provider, new OpenAIProvider(apiKeyForInit || '', defaultModel, undefined, data.provider, data.provider))
-        } else if (data.provider === 'ollama') {
-          engine.getRouter().registerProvider('ollama', new OllamaProvider('http://localhost:11434', defaultModel))
+        if (parsed.provider === 'groq') {
+          engine
+            .getRouter()
+            .registerProvider('groq', new GroqProvider(apiKeyForInit || '', defaultModel))
+        } else if (parsed.provider === 'openai' || parsed.provider === 'openrouter') {
+          engine
+            .getRouter()
+            .registerProvider(
+              parsed.provider,
+              new OpenAIProvider(
+                apiKeyForInit || '',
+                defaultModel,
+                undefined,
+                parsed.provider,
+                parsed.provider
+              )
+            )
+        } else if (parsed.provider === 'ollama') {
+          engine
+            .getRouter()
+            .registerProvider('ollama', new OllamaProvider('http://127.0.0.1:11434', defaultModel))
         }
-        
+
         return { success: true }
       } catch (err: any) {
         console.error('[IPC] PROVIDER_UPDATE Error:', err)
@@ -233,10 +393,11 @@ export function registerIpcHandlers(
       }
     }
   )
-  ipcMain.removeHandler(IPC_CHANNELS.PROVIDER_MODELS)
+
   ipcMain.handle(IPC_CHANNELS.PROVIDER_MODELS, async (_event, data: { provider: string }) => {
     try {
-      const provider = engine.getRouter().getProvider(data.provider)
+      const parsed = z.object({ provider: z.string() }).parse(data)
+      const provider = engine.getRouter().getProvider(parsed.provider)
       if (provider) {
         return await provider.listModels()
       }
@@ -253,10 +414,11 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle(IPC_CHANNELS.HOTKEY_UPDATE, (_event, binding) => {
+    const parsed = hotkeyUpdateSchema.parse(binding)
     db.prepare('UPDATE hotkeys SET keybinding = ?, is_active = ? WHERE id = ?').run(
-      binding.keybinding,
-      binding.is_active ? 1 : 0,
-      binding.id
+      parsed.keybinding,
+      parsed.is_active ? 1 : 0,
+      parsed.id
     )
     const hm = getHotkeyManager()
     if (hm) {
@@ -277,15 +439,20 @@ export function registerIpcHandlers(
   // ===== Window Controls =====
 
   ipcMain.handle(IPC_CHANNELS.WINDOW_TOGGLE, (_event, data: { action: string }) => {
+    const parsed = windowToggleSchema.parse(data)
     const win = BrowserWindow.getFocusedWindow()
     if (!win) return
 
-    switch (data.action) {
+    switch (parsed.action) {
       case 'minimize':
         win.minimize()
         break
       case 'maximize':
-        win.isMaximized() ? win.unmaximize() : win.maximize()
+        if (win.isMaximized()) {
+          win.unmaximize()
+        } else {
+          win.maximize()
+        }
         break
       case 'close':
         win.hide()

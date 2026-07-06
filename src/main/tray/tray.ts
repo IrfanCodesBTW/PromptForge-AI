@@ -90,10 +90,10 @@ function createFallbackIcon(): Electron.NativeImage {
   const size = 16
   const canvas = Buffer.alloc(size * size * 4)
   for (let i = 0; i < size * size; i++) {
-    canvas[i * 4] = 59      // R
-    canvas[i * 4 + 1] = 130  // G
-    canvas[i * 4 + 2] = 246  // B
-    canvas[i * 4 + 3] = 255  // A
+    canvas[i * 4] = 59 // R
+    canvas[i * 4 + 1] = 130 // G
+    canvas[i * 4 + 2] = 246 // B
+    canvas[i * 4 + 3] = 255 // A
   }
   return nativeImage.createFromBuffer(canvas, { width: size, height: size })
 }

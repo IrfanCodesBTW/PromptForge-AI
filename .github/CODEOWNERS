@@ -1,0 +1,12 @@
+# ====================================================
+# PromptForge AI — Code Owners
+# ====================================================
+
+# Default owners for all files
+*       @IrfanCodesBTW
+
+# Security & workflow configurations
+/.github/workflows/     @IrfanCodesBTW
+/eslint.config.js       @IrfanCodesBTW
+/tsconfig.json          @IrfanCodesBTW
+/package.json           @IrfanCodesBTW

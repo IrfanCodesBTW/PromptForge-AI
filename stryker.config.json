@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.stryker-mutator.io/stryker-config.json",
+  "mutate": [
+    "src/services/ai/*.ts",
+    "src/services/prompt/*.ts"
+  ],
+  "testRunner": "vitest",
+  "testRunner_comment": "Using Vitest test runner",
+  "reporters": [
+    "progress",
+    "clear-text",
+    "html"
+  ],
+  "coverageAnalysis": "perTest",
+  "packageManager": "npm",
+  "tsconfigFile": "tsconfig.node.json",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 50
+  }
+}

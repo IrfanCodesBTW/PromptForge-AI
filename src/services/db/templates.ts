@@ -36,8 +36,7 @@ export class TemplateService {
    */
   getById(id: string): Template | null {
     const row = this.db.prepare('SELECT * FROM templates WHERE id = ?').get(id) as
-      | TemplateRow
-      | undefined
+      TemplateRow | undefined
     return row ? this.mapRow(row) : null
   }
 
@@ -46,8 +45,7 @@ export class TemplateService {
    */
   getByName(name: string): Template | null {
     const row = this.db.prepare('SELECT * FROM templates WHERE name = ?').get(name) as
-      | TemplateRow
-      | undefined
+      TemplateRow | undefined
     return row ? this.mapRow(row) : null
   }
 
@@ -123,7 +121,9 @@ export class TemplateService {
     params.push(now())
     params.push(id)
 
-    this.db.prepare(`UPDATE templates SET ${sets.join(', ')} WHERE id = ? AND is_builtin = 0`).run(...params)
+    this.db
+      .prepare(`UPDATE templates SET ${sets.join(', ')} WHERE id = ? AND is_builtin = 0`)
+      .run(...params)
   }
 
   /**

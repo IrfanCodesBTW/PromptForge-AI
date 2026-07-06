@@ -3,7 +3,17 @@
 // ====================================================
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, FileText, Code, PenTool, BookOpen, Briefcase, Copy, Edit, Trash2 } from 'lucide-react'
+import {
+  Plus,
+  FileText,
+  Code,
+  PenTool,
+  BookOpen,
+  Briefcase,
+  Copy,
+  Edit,
+  Trash2
+} from 'lucide-react'
 import { useInvoke } from '../hooks/useIPC'
 import { IPC_CHANNELS } from '../../../shared/constants'
 import { showToast } from '../components/ui/Toast'
@@ -217,7 +227,9 @@ export function Templates(): JSX.Element {
             <div className="flex items-center justify-center h-full text-center bg-surface-elevated border border-border rounded-lg p-xl shadow-card select-none">
               <div>
                 <FileText size={24} className="mx-auto text-text-secondary mb-md" />
-                <p className="text-sm font-medium text-text-primary font-sans">Select a template to view details</p>
+                <p className="text-sm font-medium text-text-primary font-sans">
+                  Select a template to view details
+                </p>
                 <p className="text-xs text-text-secondary mt-xs font-sans">
                   Built-in templates are read-only. Duplicate to customize.
                 </p>

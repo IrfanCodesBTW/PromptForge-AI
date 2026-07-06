@@ -19,10 +19,12 @@ export interface EngineResult {
 }
 
 export class PromptEngine {
+  private db: DatabaseWrapper
   private router: ProviderRouter
   private history: HistoryService
 
   constructor(db: DatabaseWrapper) {
+    this.db = db
     this.router = new ProviderRouter(db)
     this.history = new HistoryService(db)
   }
@@ -50,8 +52,31 @@ export class PromptEngine {
     console.log(`[Engine] Enhancing with mode: ${mode}`)
 
     // Step 1: Get prompts
-    const systemPrompt = getSystemPrompt(mode)
-    const userPromptTemplate = getUserPromptTemplate(mode)
+    let systemPrompt = getSystemPrompt(mode)
+    let userPromptTemplate = getUserPromptTemplate(mode)
+
+    // Load custom template from DB if templateId is provided
+    if (options?.templateId) {
+      try {
+        const row = this.db
+          .prepare(
+            'SELECT system_prompt, user_prompt_template FROM templates WHERE id = ? AND is_active = 1'
+          )
+          .get(options.templateId) as
+          { system_prompt: string; user_prompt_template: string } | undefined
+
+        if (row) {
+          systemPrompt = row.system_prompt
+          userPromptTemplate = row.user_prompt_template
+          console.log(`[Engine] Loaded custom template: ${options.templateId}`)
+        }
+      } catch (error) {
+        console.warn(
+          `[Engine] Failed to load custom template ${options.templateId}, using defaults:`,
+          error
+        )
+      }
+    }
 
     // Step 2: Interpolate user prompt
     const userPrompt = userPromptTemplate.replace('{{input}}', input)
@@ -131,10 +156,8 @@ export class PromptEngine {
 export function cleanLLMResponse(text: string): string {
   let cleaned = text.trim()
 
-  // 1. Remove typical conversational intro patterns (case-insensitive)
-  // Matches "Here is/are [the/your] [enhanced/expanded/compressed/translated/corrected] [prompt/text/version] [:]"
-  // and variations like "Sure! Here is..." or "Certainly, here's..."
-  const conversationalIntroRegex = /^(?:(?:sure|certainly|here's|here\s+is|here\s+are|as\s+requested|ok|okay|sure\s+thing|absolutely)[,\s!]*)*(?:here\s+is|here\s+are|here's|this\s+is|the|your)?\s*(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed|final|new|prd|markdown|prds|notes-to-prompt)?\s*(?:prompt|text|version|prd|doc|document|result|output)?[,\s]*as\s+requested[,\s]*[:\-]*|^(?:(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed)\s+(?:prompt|text|version|prd|result|output)[:\-]+)/i
+  const conversationalIntroRegex =
+    /^(?:(?:sure|certainly|as\s+requested|ok|okay|sure\s+thing|absolutely)[,\s!]*)+(?:here\s+is|here\s+are|here's|this\s+is)?\s*(?:the|your)?\s*(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed|final|new|prd|markdown|prds|notes-to-prompt)?\s*(?:prompt|text|version|prd|doc|document|result|output)?[,\s]*(?:as\s+requested)?[,\s]*[:-]*|^(?:here\s+is|here\s+are|here's|this\s+is)[,\s]*(?:the|your)?\s*(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed|final|new|prd|markdown|prds|notes-to-prompt)?\s*(?:prompt|text|version|prd|doc|document|result|output)?[,\s]*(?:as\s+requested)?[,\s]*[:-]*|^(?:(?:enhanced|expanded|compressed|translated|corrected|grammar-fixed)\s+(?:prompt|text|version|prd|result|output)[:-]+)/i
 
   cleaned = cleaned.replace(conversationalIntroRegex, '').trim()
 
@@ -142,7 +165,7 @@ export function cleanLLMResponse(text: string): string {
   // Handles straight quotes ", ', and curly quotes “, ”, ‘, ’
   const startQuote = cleaned[0]
   const endQuote = cleaned[cleaned.length - 1]
-  const isWrapped = 
+  const isWrapped =
     (startQuote === '"' && endQuote === '"') ||
     (startQuote === "'" && endQuote === "'") ||
     (startQuote === '`' && endQuote === '`') ||

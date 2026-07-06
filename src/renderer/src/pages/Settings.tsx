@@ -75,7 +75,7 @@ export function Settings(): JSX.Element {
           </p>
         </div>
       </div>
- 
+
       <div className="flex gap-lg">
         {/* Section tabs */}
         <nav className="w-44 flex-shrink-0 space-y-xs select-none">
@@ -94,13 +94,18 @@ export function Settings(): JSX.Element {
             </button>
           ))}
         </nav>
- 
+
         <div className="flex-1 space-y-5">
           {activeSection === 'general' && (
             <GeneralSettings settings={settings} onSave={saveSetting} />
           )}
           {activeSection === 'providers' && (
-            <ProviderSettings settings={settings} providers={providers} invoke={invoke} onReload={loadProviders} />
+            <ProviderSettings
+              settings={settings}
+              providers={providers}
+              invoke={invoke}
+              onReload={loadProviders}
+            />
           )}
           {activeSection === 'hotkeys' && (
             <HotkeySettings hotkeys={hotkeys} onReload={loadHotkeys} invoke={invoke} />
@@ -116,9 +121,9 @@ export function Settings(): JSX.Element {
     </div>
   )
 }
- 
+
 // ----- Section Components -----
- 
+
 function GeneralSettings({
   settings,
   onSave
@@ -128,7 +133,10 @@ function GeneralSettings({
 }) {
   return (
     <div className="space-y-5">
-      <SettingsCard title="Default Provider" description="Choose the AI provider used for enhancements">
+      <SettingsCard
+        title="Default Provider"
+        description="Choose the AI provider used for enhancements"
+      >
         <select
           value={settings.defaultProvider || 'ollama'}
           onChange={(e) => onSave('defaultProvider', e.target.value)}
@@ -139,8 +147,11 @@ function GeneralSettings({
           <option value="openai">OpenAI (Cloud)</option>
         </select>
       </SettingsCard>
- 
-      <SettingsCard title="Temperature" description="Controls randomness (0.0 = deterministic, 2.0 = creative)">
+
+      <SettingsCard
+        title="Temperature"
+        description="Controls randomness (0.0 = deterministic, 2.0 = creative)"
+      >
         <div className="flex items-center gap-md">
           <input
             type="range"
@@ -156,7 +167,7 @@ function GeneralSettings({
           </span>
         </div>
       </SettingsCard>
- 
+
       <SettingsCard title="Max Tokens" description="Maximum output length (256–8192)">
         <input
           type="number"
@@ -168,8 +179,11 @@ function GeneralSettings({
           className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         />
       </SettingsCard>
- 
-      <SettingsCard title="Auto-Paste" description="Automatically paste enhanced text after processing">
+
+      <SettingsCard
+        title="Auto-Paste"
+        description="Automatically paste enhanced text after processing"
+      >
         <ToggleSwitch
           checked={settings.clipboard_auto_paste !== 'false'}
           onChange={(checked) => onSave('clipboard_auto_paste', String(checked))}
@@ -200,20 +214,22 @@ function ProviderSettings({
   // Fetch models whenever provider changes
   useEffect(() => {
     const provList = providers as { name: string; default_model: string }[]
-    const provInfo = provList.find(p => p.name === selectedProvider)
-    
+    const provInfo = provList.find((p) => p.name === selectedProvider)
+
     setLoadingModels(true)
-    invoke(IPC_CHANNELS.PROVIDER_MODELS, { provider: selectedProvider }).then((res) => {
-      const m = res as string[]
-      setModels(m)
-      if (provInfo?.default_model && m.includes(provInfo.default_model)) {
-        setSelectedModel(provInfo.default_model)
-      } else if (m.length > 0) {
-        setSelectedModel(m[0])
-      }
-    }).finally(() => {
-      setLoadingModels(false)
-    })
+    invoke(IPC_CHANNELS.PROVIDER_MODELS, { provider: selectedProvider })
+      .then((res) => {
+        const m = res as string[]
+        setModels(m)
+        if (provInfo?.default_model && m.includes(provInfo.default_model)) {
+          setSelectedModel(provInfo.default_model)
+        } else if (m.length > 0) {
+          setSelectedModel(m[0])
+        }
+      })
+      .finally(() => {
+        setLoadingModels(false)
+      })
   }, [selectedProvider, providers, invoke])
 
   const testProvider = async () => {
@@ -262,7 +278,7 @@ function ProviderSettings({
             <option value="openai">OpenAI</option>
             <option value="openrouter">OpenRouter</option>
           </select>
- 
+
           {selectedProvider !== 'ollama' && (
             <input
               type="password"
@@ -272,7 +288,7 @@ function ProviderSettings({
               className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
             />
           )}
- 
+
           <select
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
@@ -280,11 +296,14 @@ function ProviderSettings({
             disabled={loadingModels}
           >
             {loadingModels && <option value="">Loading models...</option>}
-            {!loadingModels && models.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
+            {!loadingModels &&
+              models.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
           </select>
- 
+
           <div className="flex gap-sm">
             <button
               onClick={testProvider}
@@ -304,11 +323,14 @@ function ProviderSettings({
           </div>
         </div>
       </SettingsCard>
- 
+
       <SettingsCard title="Provider Status" description="Current health of configured providers">
         <div className="space-y-sm">
           {(providers as { name: string; type: string; is_active: number }[]).map((p) => (
-            <div key={p.name} className="flex items-center justify-between py-xs border-b border-border/40 last:border-0">
+            <div
+              key={p.name}
+              className="flex items-center justify-between py-xs border-b border-border/40 last:border-0"
+            >
               <div className="flex items-center gap-sm">
                 <div
                   className={`w-2 h-2 rounded-full ${
@@ -317,7 +339,9 @@ function ProviderSettings({
                 />
                 <span className="text-sm text-text-primary capitalize">{p.name}</span>
               </div>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pill-bg text-text-secondary select-none">{p.type}</span>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pill-bg text-text-secondary select-none">
+                {p.type}
+              </span>
             </div>
           ))}
         </div>
@@ -370,14 +394,18 @@ function HotkeySettings({
       if (key === ' ') keyStr = 'Space'
 
       const newBinding = [...modifiers, keyStr].join('+')
-      
+
       try {
         await invoke(IPC_CHANNELS.HOTKEY_UPDATE, {
           id: hk.id,
           keybinding: newBinding,
           is_active: hk.is_active
         })
-        showToast({ type: 'success', title: 'Hotkey Updated', message: `Registered ${newBinding} for ${hk.action}` })
+        showToast({
+          type: 'success',
+          title: 'Hotkey Updated',
+          message: `Registered ${newBinding} for ${hk.action}`
+        })
         onReload()
       } catch {
         showToast({ type: 'error', title: 'Error', message: 'Failed to update hotkey' })
@@ -400,41 +428,50 @@ function HotkeySettings({
   }
 
   return (
-    <SettingsCard title="Global Hotkeys" description="Keyboard shortcuts for enhancement modes. Click the hotkey box to record a new shortcut.">
+    <SettingsCard
+      title="Global Hotkeys"
+      description="Keyboard shortcuts for enhancement modes. Click the hotkey box to record a new shortcut."
+    >
       <div className="space-y-md">
-        {(hotkeys as { id: string; action: string; keybinding: string; is_active: number }[]).map((hk) => {
-          const isRecording = recordingId === hk.id
-          return (
-            <div key={hk.action} className="flex items-center justify-between p-md bg-surface border border-border rounded-sm">
-              <div>
-                <span className="text-sm font-medium text-text-primary capitalize block font-sans">{hk.action}</span>
-                <span className="text-xs text-text-secondary mt-xs font-sans">Trigger the {hk.action} prompt template</span>
+        {(hotkeys as { id: string; action: string; keybinding: string; is_active: number }[]).map(
+          (hk) => {
+            const isRecording = recordingId === hk.id
+            return (
+              <div
+                key={hk.action}
+                className="flex items-center justify-between p-md bg-surface border border-border rounded-sm"
+              >
+                <div>
+                  <span className="text-sm font-medium text-text-primary capitalize block font-sans">
+                    {hk.action}
+                  </span>
+                  <span className="text-xs text-text-secondary mt-xs font-sans">
+                    Trigger the {hk.action} prompt template
+                  </span>
+                </div>
+                <div className="flex items-center gap-sm">
+                  <button
+                    onClick={() => (isRecording ? cancelRecording() : startRecording(hk.id))}
+                    onKeyDown={(e) => isRecording && handleKeyDown(e, hk)}
+                    className={`h-9 px-md rounded-sm text-xs font-mono border transition-all duration-[160ms] ease-standard min-w-[120px] text-center select-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
+                      isRecording
+                        ? 'bg-primary border-primary text-text-inverse animate-pulse'
+                        : 'bg-surface-elevated border-border text-text-primary hover:bg-pill-bg-hover hover:border-text-secondary'
+                    }`}
+                  >
+                    {isRecording ? 'Press keys...' : hk.keybinding}
+                  </button>
+                  <ToggleSwitch checked={hk.is_active === 1} onChange={() => toggleHotkey(hk)} />
+                </div>
               </div>
-              <div className="flex items-center gap-sm">
-                <button
-                  onClick={() => isRecording ? cancelRecording() : startRecording(hk.id)}
-                  onKeyDown={(e) => isRecording && handleKeyDown(e, hk)}
-                  className={`h-9 px-md rounded-sm text-xs font-mono border transition-all duration-[160ms] ease-standard min-w-[120px] text-center select-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                    isRecording 
-                      ? 'bg-primary border-primary text-text-inverse animate-pulse' 
-                      : 'bg-surface-elevated border-border text-text-primary hover:bg-pill-bg-hover hover:border-text-secondary'
-                  }`}
-                >
-                  {isRecording ? 'Press keys...' : hk.keybinding}
-                </button>
-                <ToggleSwitch
-                  checked={hk.is_active === 1}
-                  onChange={() => toggleHotkey(hk)}
-                />
-              </div>
-            </div>
-          )
-        })}
+            )
+          }
+        )}
       </div>
     </SettingsCard>
   )
 }
- 
+
 function AppearanceSettings({
   settings,
   onSave
@@ -462,7 +499,7 @@ function AppearanceSettings({
     </SettingsCard>
   )
 }
- 
+
 function PrivacySettings({
   settings,
   onSave
@@ -484,7 +521,7 @@ function PrivacySettings({
           <option value="365">1 year</option>
         </select>
       </SettingsCard>
- 
+
       <SettingsCard title="Analytics" description="Anonymous usage statistics">
         <ToggleSwitch
           checked={settings.analytics_enabled === 'true'}
@@ -494,9 +531,9 @@ function PrivacySettings({
     </div>
   )
 }
- 
+
 // ----- Shared Components -----
- 
+
 function SettingsCard({
   title,
   description,
@@ -516,7 +553,7 @@ function SettingsCard({
     </div>
   )
 }
- 
+
 function ToggleSwitch({
   checked,
   onChange

@@ -55,9 +55,7 @@ export class GroqProvider implements AIProvider {
         model
       }
     } catch (error) {
-      throw new Error(
-        `Groq error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+      throw new Error(`Groq error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

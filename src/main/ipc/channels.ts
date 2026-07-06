@@ -39,10 +39,7 @@ export interface IpcMainHandlers {
   }) => Promise<PaginatedResult<HistoryEntry>>
   [IPC_CHANNELS.HISTORY_GET]: (id: string) => Promise<HistoryEntry | null>
   [IPC_CHANNELS.HISTORY_DELETE]: (ids: string[]) => Promise<void>
-  [IPC_CHANNELS.HISTORY_FAVORITE]: (data: {
-    id: string
-    isFavorite: boolean
-  }) => Promise<void>
+  [IPC_CHANNELS.HISTORY_FAVORITE]: (data: { id: string; isFavorite: boolean }) => Promise<void>
 
   // Templates
   [IPC_CHANNELS.TEMPLATE_LIST]: (category?: string) => Promise<Template[]>

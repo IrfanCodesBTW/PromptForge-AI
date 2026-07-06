@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Electron: Main Process",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite",
+      "runtimeArgs": ["dev", "--watch"],
+      "cwd": "${workspaceRoot}",
+      "protocol": "inspector",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceRoot}/out/**/*.js"]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Electron: Renderer Process",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceRoot}/src/renderer",
+      "sourceMaps": true,
+      "timeout": 30000
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Vitest: Active File",
+      "autoAttachChildProcesses": true,
+      "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    }
+  ]
+}
