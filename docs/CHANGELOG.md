@@ -5,6 +5,17 @@ All notable changes to PromptForge AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v1.2.1...promptforge-ai-v2.0.0) (2026-07-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* none -- preview window is feature-flagged off by default
+
+### Features
+
+* v1.5.0 Intelligence release -- floating preview window, persona profiles, smart history FTS4, multi-turn refinement ([2970ab2](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/2970ab2662879b7a11b8cdece13b780d97ee206c))
+
 ## [1.5.0](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v1.2.1...promptforge-ai-v1.5.0) (2026-07-23)
 
 ### Features — Intelligence Release

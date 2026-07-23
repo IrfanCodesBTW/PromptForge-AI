@@ -1,6 +1,6 @@
 {
   "name": "promptforge-ai",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Forge Better Prompts. Get Better Results.",
   "main": "./out/main/index.js",
   "author": "PromptForge",
