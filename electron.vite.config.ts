@@ -28,6 +28,15 @@ export default defineConfig({
         '@shared': resolve('src/shared')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          preview: resolve('src/renderer/preview/index.html'),
+          'history-picker': resolve('src/renderer/history-picker/index.html')
+        }
+      }
+    }
   }
 })

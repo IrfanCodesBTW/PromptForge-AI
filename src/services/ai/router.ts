@@ -4,11 +4,23 @@
 // Selects the active provider and implements fallback chain.
 
 import type { DatabaseWrapper } from '../db/database'
-import type { AIProvider, CompletionOptions, CompletionResult } from './provider'
+import type { AIProvider, CompletionOptions, CompletionResult, TokenChunk } from './provider'
 import { OllamaProvider } from './ollama'
 import { GroqProvider } from './groq'
 import { OpenAIProvider } from './openai'
 import type { ProviderStatus } from '../../shared/types'
+
+/**
+ * Result of a streamWithFallback() call — reports which mode was actually used
+ * so callers (e.g. PromptEngine.enhanceStream()) can surface a "streaming
+ * unavailable" notice without treating it as an error.
+ */
+export interface StreamFallbackInfo {
+  /** True if the router had to fall back to a non-streaming complete() call */
+  usedFallback: boolean
+  /** Reason for the fallback, if any (for logging/telemetry) */
+  fallbackReason?: string
+}
 
 export class ProviderRouter {
   private providers: Map<string, AIProvider> = new Map()
@@ -182,6 +194,109 @@ export class ProviderRouter {
     }
 
     throw lastError || new Error('No AI providers available')
+  }
+
+  /**
+   * Stream a completion with hybrid fallback:
+   * 1. Try completeStream() on the preferred/default provider (if implemented).
+   * 2. On stream error, unavailability, or missing implementation, fall back
+   *    to completeWithFallback() (non-streaming) — the whole fallback chain
+   *    still applies there.
+   * 3. Never throws for a "streaming unavailable" condition alone — only
+   *    throws if BOTH streaming AND the non-streaming fallback fail.
+   *
+   * Yields TokenChunk objects. The final CompletionResult-equivalent (full
+   * text/tokens/latency) must be reconstructed by the caller from the
+   * accumulated chunks, OR — in the non-streaming fallback case — is
+   * delivered as a single synthetic chunk containing the full text with
+   * done: true (so callers have one uniform chunk-consumption code path).
+   */
+  async *streamWithFallback(
+    userPrompt: string,
+    systemPrompt: string,
+    options?: CompletionOptions,
+    preferredProvider?: string,
+    onFallback?: (info: StreamFallbackInfo) => void
+  ): AsyncGenerator<TokenChunk, CompletionResult, void> {
+    const defaultProviderId = this.getDefaultProvider()?.id
+    const startProvider = preferredProvider || defaultProviderId
+
+    const tryOrder = startProvider
+      ? [startProvider, ...this.fallbackOrder.filter((p) => p !== startProvider)]
+      : this.fallbackOrder
+
+    for (const providerName of tryOrder) {
+      const provider = this.providers.get(providerName)
+      if (!provider) continue
+
+      let available: boolean
+      try {
+        available = await provider.isAvailable()
+      } catch {
+        available = false
+      }
+      if (!available) {
+        console.warn(`[Router] ${providerName} is not available, trying next...`)
+        continue
+      }
+
+      if (typeof provider.completeStream !== 'function') {
+        // No streaming implementation for this provider — fall through to
+        // the non-streaming fallback path below using this same provider.
+        continue
+      }
+
+      try {
+        let fullText = ''
+        let tokensUsed = 0
+        const startTime = Date.now()
+
+        for await (const chunk of provider.completeStream(userPrompt, systemPrompt, options)) {
+          fullText += chunk.text
+          yield chunk
+          if (chunk.done) {
+            tokensUsed = Math.ceil(fullText.length / 4) // rough estimate; providers don't report usage mid-stream
+          }
+        }
+
+        const latencyMs = Date.now() - startTime
+        console.log(`[Router] ${providerName} streamed completion in ${latencyMs}ms`)
+
+        return {
+          text: fullText,
+          tokensUsed,
+          latencyMs,
+          provider: providerName,
+          model: options?.model || ''
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'Unknown streaming error'
+        console.warn(`[Router] ${providerName} streaming failed: ${reason}, falling back...`)
+        onFallback?.({ usedFallback: true, fallbackReason: reason })
+        // Fall through to non-streaming fallback below, still trying this
+        // same provider first via completeWithFallback's own tryOrder logic.
+        break
+      }
+    }
+
+    // Hybrid fallback: no streaming succeeded (unsupported or failed) —
+    // use the existing non-streaming fallback chain and emit one synthetic
+    // "done" chunk so callers have a uniform consumption path.
+    onFallback?.({
+      usedFallback: true,
+      fallbackReason: 'Streaming unavailable for selected provider(s)'
+    })
+
+    const result = await this.completeWithFallback(
+      userPrompt,
+      systemPrompt,
+      options,
+      preferredProvider
+    )
+
+    yield { text: result.text, done: true, provider: result.provider }
+
+    return result
   }
 
   /**

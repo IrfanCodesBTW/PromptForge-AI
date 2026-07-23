@@ -4,7 +4,7 @@
 // Also works with OpenRouter and any OpenAI-compatible endpoint.
 
 import OpenAI from 'openai'
-import type { AIProvider, CompletionOptions, CompletionResult } from './provider'
+import type { AIProvider, CompletionOptions, CompletionResult, TokenChunk } from './provider'
 
 export class OpenAIProvider implements AIProvider {
   readonly id: string
@@ -76,6 +76,48 @@ export class OpenAIProvider implements AIProvider {
       return response.data.map((m) => m.id).slice(0, 20) // Limit for UI
     } catch {
       return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
+    }
+  }
+
+  /**
+   * Stream a completion as incremental token chunks.
+   * Uses the OpenAI SDK's native streaming (stream: true async-iterable).
+   * Works identically for OpenAI and OpenRouter since both share this class
+   * (only baseURL/id/name differ).
+   * Callers must handle thrown errors as a signal to fall back to complete().
+   */
+  async *completeStream(
+    userPrompt: string,
+    systemPrompt: string,
+    options?: CompletionOptions
+  ): AsyncIterable<TokenChunk> {
+    const model = options?.model || this.defaultModel
+
+    try {
+      const stream = await this.client.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 2048,
+        stream: true
+      })
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? ''
+        const finished = chunk.choices[0]?.finish_reason != null
+        yield {
+          text: delta,
+          done: finished,
+          provider: this.id
+        }
+      }
+    } catch (error) {
+      throw new Error(
+        `${this.name} stream error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 }

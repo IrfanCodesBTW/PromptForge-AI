@@ -56,7 +56,7 @@ describe('Structured Logger', () => {
     // Verify logs got written to disk
     const logFilePath = path.join(testDir, 'logs/app.log')
     expect(fs.existsSync(logFilePath)).toBe(true)
-    
+
     const content = fs.readFileSync(logFilePath, 'utf8')
     expect(content).toContain('Hello logger info')
     expect(content).toContain('Hello logger warn')

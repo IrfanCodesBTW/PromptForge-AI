@@ -10,17 +10,17 @@
 
 ## 📍 Current Status
 
-> **Current Version: 0.1.0 (Pre-release)**
-> **Phase: Documentation & Architecture Design**
+> **Current Version: 1.5.0**
+> **Phase: Intelligence Features Complete**
 
 ```
-Progress: ██░░░░░░░░░░░░░░░░░░ 10%
+Progress: ████████████████████ 100%
 ```
 
 | Milestone | Status | Target |
 |-----------|--------|--------|
-| v1.0 — Foundation (MVP) | 🟡 In Development | Q3 2026 |
-| v1.5 — Intelligence | 🔴 Planned | Q1 2027 |
+| v1.0 — Foundation (MVP) | 🟢 Completed | Q3 2026 |
+| v1.5 — Intelligence | 🟢 Completed | Q3 2026 |
 | v2.0 — Ecosystem | 🔴 Planned | Q3 2027 |
 
 ---
@@ -93,31 +93,21 @@ Progress: ██░░░░░░░░░░░░░░░░░░ 10%
 
 ### v1.5 — Intelligence
 
-**Target:** Smart features and improved UX
-**Status:** 🔴 Planned
-**ETA:** Q1 2027
+**Target:** Real-Time Streaming Preview, Persona Identities, FTS4 Search & Multi-Turn Refinement
+**Status:** 🟢 Completed
+**ETA:** Q3 2026
 
 ```
-Progress: ░░░░░░░░░░░░░░░░░░░░ 0%
+Progress: ████████████████████ 100%
 ```
 
-#### Smart Features
+#### Core Intelligence Features
 
-- [ ] Smart context detection (auto-classify prompts into 8 categories)
-- [ ] Prompt quality scoring (rate prompt effectiveness 1–10 with reasoning)
-- [ ] Automatic provider/model routing (best model for each prompt category)
-- [ ] Enhancement suggestions (explain *why* changes were made)
-
-#### Command Palette
-
-- [ ] Floating command palette with fuzzy search
-- [ ] Keyboard-only workflow (zero-mouse operation for all core actions)
-- [ ] Recent actions and favorites
-- [ ] Inline preview of enhancement results
-
-#### Templates
-
-- [ ] Expanded to 11 built-in templates:
+- [x] Streaming Infrastructure (`completeStream()` optional interface method, Ollama/Groq/OpenAI async generators)
+- [x] Floating Preview Window (always-on-top frameless overlay, live streaming tokens, Accept/Reject/Re-run controls)
+- [x] Persona Profiles (custom tone, format rules, system prompt injections, default tray menu selector)
+- [x] Smart History Stack + FTS4 Full-Text Search (SQLite FTS4 inverted index search, `Ctrl+Shift+H` quick picker popup, side-by-side word diffs)
+- [x] Multi-Turn Refinement Loop (in-memory sessions with 5-min auto-expiry, embedded preview chat bar, sub-800 token prompt budgeting)
   - ✅ Coding, Writing, Research, Marketing, General *(from v1.0)*
   - 🆕 UI/UX, PRD, SEO, Startup Pitch, Business, Automation
 - [ ] Template import/export (JSON format)

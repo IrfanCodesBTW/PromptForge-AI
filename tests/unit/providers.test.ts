@@ -14,9 +14,20 @@ vi.mock('groq-sdk', () => {
       return {
         chat: {
           completions: {
-            create: vi.fn().mockResolvedValue({
-              choices: [{ message: { content: 'Groq response' } }],
-              usage: { total_tokens: 50 }
+            create: vi.fn().mockImplementation(async (params: { stream?: boolean }) => {
+              if (params.stream) {
+                return {
+                  async *[Symbol.asyncIterator]() {
+                    yield { choices: [{ delta: { content: 'Hello ' }, finish_reason: null }] }
+                    yield { choices: [{ delta: { content: 'Groq' }, finish_reason: null }] }
+                    yield { choices: [{ delta: { content: '' }, finish_reason: 'stop' }] }
+                  }
+                }
+              }
+              return {
+                choices: [{ message: { content: 'Groq response' } }],
+                usage: { total_tokens: 50 }
+              }
             })
           }
         },
@@ -37,9 +48,20 @@ vi.mock('openai', () => {
       return {
         chat: {
           completions: {
-            create: vi.fn().mockResolvedValue({
-              choices: [{ message: { content: 'OpenAI response' } }],
-              usage: { total_tokens: 60 }
+            create: vi.fn().mockImplementation(async (params: { stream?: boolean }) => {
+              if (params.stream) {
+                return {
+                  async *[Symbol.asyncIterator]() {
+                    yield { choices: [{ delta: { content: 'Hello ' }, finish_reason: null }] }
+                    yield { choices: [{ delta: { content: 'OpenAI' }, finish_reason: null }] }
+                    yield { choices: [{ delta: { content: '' }, finish_reason: 'stop' }] }
+                  }
+                }
+              }
+              return {
+                choices: [{ message: { content: 'OpenAI response' } }],
+                usage: { total_tokens: 60 }
+              }
             })
           }
         },
@@ -58,10 +80,21 @@ vi.mock('ollama', () => {
   return {
     Ollama: vi.fn().mockImplementation(() => {
       return {
-        chat: vi.fn().mockResolvedValue({
-          message: { content: 'Ollama response' },
-          eval_count: 30,
-          prompt_eval_count: 20
+        chat: vi.fn().mockImplementation(async (params: { stream?: boolean }) => {
+          if (params.stream) {
+            return {
+              async *[Symbol.asyncIterator]() {
+                yield { message: { content: 'Hello ' }, done: false }
+                yield { message: { content: 'Ollama' }, done: false }
+                yield { message: { content: '' }, done: true }
+              }
+            }
+          }
+          return {
+            message: { content: 'Ollama response' },
+            eval_count: 30,
+            prompt_eval_count: 20
+          }
         }),
         list: vi.fn().mockResolvedValue({
           models: [{ name: 'llama3.1' }]
@@ -94,6 +127,18 @@ describe('AI Provider Adapters', () => {
       const available = await provider.isAvailable()
       expect(available).toBe(true)
     })
+
+    it('should stream completion chunks', async () => {
+      const provider = new GroqProvider('gsk_key')
+      const chunks: string[] = []
+      let doneChunk = false
+      for await (const chunk of provider.completeStream!('user prompt', 'system prompt')) {
+        chunks.push(chunk.text)
+        if (chunk.done) doneChunk = true
+      }
+      expect(chunks.join('')).toBe('Hello Groq')
+      expect(doneChunk).toBe(true)
+    })
   })
 
   describe('OpenAIProvider', () => {
@@ -117,6 +162,18 @@ describe('AI Provider Adapters', () => {
       const available = await provider.isAvailable()
       expect(available).toBe(true)
     })
+
+    it('should stream completion chunks', async () => {
+      const provider = new OpenAIProvider('sk_key')
+      const chunks: string[] = []
+      let doneChunk = false
+      for await (const chunk of provider.completeStream!('user prompt', 'system prompt')) {
+        chunks.push(chunk.text)
+        if (chunk.done) doneChunk = true
+      }
+      expect(chunks.join('')).toBe('Hello OpenAI')
+      expect(doneChunk).toBe(true)
+    })
   })
 
   describe('OllamaProvider', () => {
@@ -139,6 +196,18 @@ describe('AI Provider Adapters', () => {
       const provider = new OllamaProvider()
       const available = await provider.isAvailable()
       expect(available).toBe(true)
+    })
+
+    it('should stream completion chunks', async () => {
+      const provider = new OllamaProvider()
+      const chunks: string[] = []
+      let doneChunk = false
+      for await (const chunk of provider.completeStream!('user prompt', 'system prompt')) {
+        chunks.push(chunk.text)
+        if (chunk.done) doneChunk = true
+      }
+      expect(chunks.join('')).toBe('Hello Ollama')
+      expect(doneChunk).toBe(true)
     })
   })
 })

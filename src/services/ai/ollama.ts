@@ -3,7 +3,7 @@
 // ====================================================
 
 import { Ollama } from 'ollama'
-import type { AIProvider, CompletionOptions, CompletionResult } from './provider'
+import type { AIProvider, CompletionOptions, CompletionResult, TokenChunk } from './provider'
 
 export class OllamaProvider implements AIProvider {
   readonly id = 'ollama'
@@ -67,6 +67,46 @@ export class OllamaProvider implements AIProvider {
       return response.models.map((m) => m.name)
     } catch {
       return []
+    }
+  }
+
+  /**
+   * Stream a completion as incremental token chunks.
+   * Uses Ollama's native async-generator streaming (client.chat({ stream: true })).
+   * Callers must handle thrown errors as a signal to fall back to complete().
+   */
+  async *completeStream(
+    userPrompt: string,
+    systemPrompt: string,
+    options?: CompletionOptions
+  ): AsyncIterable<TokenChunk> {
+    const model = options?.model || this.defaultModel
+
+    try {
+      const stream = await this.client.chat({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        stream: true,
+        options: {
+          temperature: options?.temperature ?? 0.7,
+          num_predict: options?.maxTokens ?? 2048
+        }
+      })
+
+      for await (const part of stream) {
+        yield {
+          text: part.message?.content ?? '',
+          done: part.done ?? false,
+          provider: this.id
+        }
+      }
+    } catch (error) {
+      throw new Error(
+        `Ollama stream error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 }

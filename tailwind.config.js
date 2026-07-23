@@ -24,7 +24,10 @@ module.exports = {
         'disabled-bg': 'var(--color-disabled-bg)',
         'disabled-text': 'var(--color-disabled-text)',
         'pill-bg': 'var(--color-pill-bg)',
-        'pill-bg-hover': 'var(--color-pill-bg-hover)'
+        'pill-bg-hover': 'var(--color-pill-bg-hover)',
+        'success-highlight': 'var(--color-success-highlight)',
+        'error-highlight': 'var(--color-error-highlight)',
+        'primary-highlight': 'var(--color-primary-highlight)'
       },
       fontFamily: {
         sans: ['var(--font-sans)'],

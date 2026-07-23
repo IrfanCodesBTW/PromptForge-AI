@@ -1,0 +1,509 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Settings — Personas Tab > renders the Personas tab with the persona list and editor matching the expected structure 1`] = `
+<div>
+  <div
+    class="max-w-4xl mx-auto"
+  >
+    <div
+      class="flex items-center justify-between mb-xl"
+    >
+      <div>
+        <h1
+          class="text-xl font-medium font-serif text-text-primary"
+        >
+          Settings
+        </h1>
+        <p
+          class="text-sm text-text-secondary mt-xs"
+        >
+          Configure PromptForge AI to your preferences
+        </p>
+      </div>
+    </div>
+    <div
+      class="flex gap-lg"
+    >
+      <nav
+        class="w-44 flex-shrink-0 space-y-xs select-none"
+      >
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-text-secondary hover:text-text-primary hover:bg-surface-card-hover"
+        >
+          <svg
+            class="lucide lucide-zap"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+            />
+          </svg>
+          General
+        </button>
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-text-secondary hover:text-text-primary hover:bg-surface-card-hover"
+        >
+          <svg
+            class="lucide lucide-globe"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <path
+              d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
+            />
+            <path
+              d="M2 12h20"
+            />
+          </svg>
+          Providers
+        </button>
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-text-secondary hover:text-text-primary hover:bg-surface-card-hover"
+        >
+          <svg
+            class="lucide lucide-keyboard"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M10 8h.01"
+            />
+            <path
+              d="M12 12h.01"
+            />
+            <path
+              d="M14 8h.01"
+            />
+            <path
+              d="M16 12h.01"
+            />
+            <path
+              d="M18 8h.01"
+            />
+            <path
+              d="M6 8h.01"
+            />
+            <path
+              d="M7 16h10"
+            />
+            <path
+              d="M8 12h.01"
+            />
+            <rect
+              height="16"
+              rx="2"
+              width="20"
+              x="2"
+              y="4"
+            />
+          </svg>
+          Hotkeys
+        </button>
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none bg-mint-100 text-text-primary font-medium"
+        >
+          <svg
+            class="lucide lucide-user"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+            />
+            <circle
+              cx="12"
+              cy="7"
+              r="4"
+            />
+          </svg>
+          Personas
+        </button>
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-text-secondary hover:text-text-primary hover:bg-surface-card-hover"
+        >
+          <svg
+            class="lucide lucide-palette"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="13.5"
+              cy="6.5"
+              fill="currentColor"
+              r=".5"
+            />
+            <circle
+              cx="17.5"
+              cy="10.5"
+              fill="currentColor"
+              r=".5"
+            />
+            <circle
+              cx="8.5"
+              cy="7.5"
+              fill="currentColor"
+              r=".5"
+            />
+            <circle
+              cx="6.5"
+              cy="12.5"
+              fill="currentColor"
+              r=".5"
+            />
+            <path
+              d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"
+            />
+          </svg>
+          Appearance
+        </button>
+        <button
+          class="w-full flex items-center gap-sm px-md py-sm rounded-full text-sm transition-all duration-[160ms] ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none text-text-secondary hover:text-text-primary hover:bg-surface-card-hover"
+        >
+          <svg
+            class="lucide lucide-shield"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+            />
+          </svg>
+          Privacy
+        </button>
+      </nav>
+      <div
+        class="flex-1 space-y-5"
+      >
+        <div
+          class="flex gap-lg"
+        >
+          <div
+            class="w-56 flex-shrink-0 space-y-xs"
+          >
+            <button
+              class="w-full text-left px-md py-sm rounded-sm text-sm transition-colors cursor-pointer flex items-center justify-between bg-mint-100 text-text-primary font-medium"
+            >
+              <span>
+                General
+              </span>
+              <svg
+                class="lucide lucide-circle-check-big text-primary"
+                fill="none"
+                height="14"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="14"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21.801 10A10 10 0 1 1 17 3.335"
+                />
+                <path
+                  d="m9 11 3 3L22 4"
+                />
+              </svg>
+            </button>
+            <button
+              class="w-full text-left px-md py-sm rounded-sm text-sm transition-colors cursor-pointer flex items-center justify-between text-text-secondary hover:bg-surface-card-hover hover:text-text-primary"
+            >
+              <span>
+                Developer
+              </span>
+            </button>
+          </div>
+          <div
+            class="flex-1 space-y-5"
+          >
+            <div
+              class="bg-surface-elevated rounded-lg border border-border p-xl shadow-card"
+            >
+              <div
+                class="mb-md"
+              >
+                <h3
+                  class="text-md font-medium text-text-primary font-sans"
+                >
+                  Identity
+                </h3>
+                <p
+                  class="text-xs text-text-secondary mt-xs font-sans"
+                >
+                  Name, description, and tone of this persona
+                </p>
+              </div>
+              <div
+                class="space-y-md"
+              >
+                <div>
+                  <label
+                    class="text-xs text-text-secondary mb-xs block"
+                    for="persona-name"
+                  >
+                    Name
+                  </label>
+                  <input
+                    class="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none"
+                    id="persona-name"
+                    type="text"
+                    value="General"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="text-xs text-text-secondary mb-xs block"
+                    for="persona-description"
+                  >
+                    Description
+                  </label>
+                  <input
+                    class="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none"
+                    id="persona-description"
+                    type="text"
+                    value="Neutral, balanced tone."
+                  />
+                </div>
+                <div>
+                  <span
+                    class="text-xs text-text-secondary mb-xs block"
+                  >
+                    Tone
+                  </span>
+                  <div
+                    class="flex gap-xs"
+                  >
+                    <button
+                      class="flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none bg-primary text-white"
+                    >
+                      professional
+                    </button>
+                    <button
+                      class="flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none bg-pill-bg text-text-secondary hover:bg-pill-bg-hover"
+                    >
+                      casual
+                    </button>
+                    <button
+                      class="flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none bg-pill-bg text-text-secondary hover:bg-pill-bg-hover"
+                    >
+                      technical
+                    </button>
+                    <button
+                      class="flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none bg-pill-bg text-text-secondary hover:bg-pill-bg-hover"
+                    >
+                      creative
+                    </button>
+                    <button
+                      class="flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none bg-pill-bg text-text-secondary hover:bg-pill-bg-hover"
+                    >
+                      formal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="bg-surface-elevated rounded-lg border border-border p-xl shadow-card"
+            >
+              <div
+                class="mb-md"
+              >
+                <h3
+                  class="text-md font-medium text-text-primary font-sans"
+                >
+                  Format Rules
+                </h3>
+                <p
+                  class="text-xs text-text-secondary mt-xs font-sans"
+                >
+                  Free-text formatting guidance for this persona
+                </p>
+              </div>
+              <textarea
+                class="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none resize-none"
+                rows="3"
+              >
+                Use clear, plain language.
+              </textarea>
+            </div>
+            <div
+              class="bg-surface-elevated rounded-lg border border-border p-xl shadow-card"
+            >
+              <div
+                class="mb-md"
+              >
+                <h3
+                  class="text-md font-medium text-text-primary font-sans"
+                >
+                  System Prompt Injection
+                </h3>
+                <p
+                  class="text-xs text-text-secondary mt-xs font-sans"
+                >
+                  Injected verbatim as the outer identity/tone frame ahead of the task-specific system prompt
+                </p>
+              </div>
+              <textarea
+                class="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm font-mono text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none resize-none"
+                rows="5"
+              >
+                Respond in a neutral, professional tone.
+              </textarea>
+            </div>
+            <div
+              class="bg-surface-elevated rounded-lg border border-border p-xl shadow-card"
+            >
+              <div
+                class="mb-md"
+              >
+                <h3
+                  class="text-md font-medium text-text-primary font-sans"
+                >
+                  Live Preview
+                </h3>
+                <p
+                  class="text-xs text-text-secondary mt-xs font-sans"
+                >
+                  How this persona modifies a sample prompt
+                </p>
+              </div>
+              <pre
+                class="whitespace-pre-wrap text-xs font-mono text-text-secondary bg-surface p-md rounded-sm border border-border"
+              >
+                Respond in a neutral, professional tone.
+                
+
+---
+
+
+                You are an expert prompt engineer. Enhance this prompt: "Write a function that sorts a list."
+              </pre>
+            </div>
+            <div
+              class="bg-surface-elevated rounded-lg border border-border p-xl shadow-card"
+            >
+              <div
+                class="mb-md"
+              >
+                <h3
+                  class="text-md font-medium text-text-primary font-sans"
+                >
+                  Actions
+                </h3>
+                <p
+                  class="text-xs text-text-secondary mt-xs font-sans"
+                >
+                  Set as default, duplicate, or delete this persona
+                </p>
+              </div>
+              <div
+                class="flex items-center gap-sm flex-wrap"
+              >
+                <div
+                  class="flex items-center gap-sm mr-auto"
+                >
+                  <span
+                    class="text-sm text-text-secondary"
+                  >
+                    Set as Default
+                  </span>
+                  <button
+                    aria-checked="true"
+                    class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full border transition-all duration-[160ms] ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 bg-primary border-primary hover:bg-primary-hover"
+                    role="switch"
+                  >
+                    <span
+                      class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-[160ms] ease-standard translate-x-5"
+                    />
+                  </button>
+                </div>
+                <button
+                  class="h-9 px-md rounded-sm text-sm bg-primary text-white hover:bg-primary-hover transition-colors cursor-pointer inline-flex items-center gap-xs"
+                >
+                  <svg
+                    class="lucide lucide-save"
+                    fill="none"
+                    height="14"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+                    />
+                    <path
+                      d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
+                    />
+                    <path
+                      d="M7 3v4a1 1 0 0 0 1 1h7"
+                    />
+                  </svg>
+                  Save
+                </button>
+                <button
+                  class="h-9 px-md rounded-sm text-sm bg-surface-elevated border border-border text-text-primary hover:bg-surface-card-hover transition-colors cursor-pointer"
+                >
+                  Duplicate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

@@ -118,7 +118,7 @@ describe('Shared Utils', () => {
         .fn()
         .mockRejectedValueOnce(new Error('fail'))
         .mockResolvedValueOnce('success')
-      
+
       const res = await withRetry(mockFn, 3, 10)
       expect(res).toBe('success')
       expect(mockFn).toHaveBeenCalledTimes(2)

@@ -29,5 +29,10 @@ export const DEFAULT_HOTKEY_BINDINGS: HotkeyDefinition[] = [
     accelerator: 'Ctrl+Shift+K',
     mode: 'compress',
     description: 'Compress selected text'
+  },
+  {
+    action: 'history',
+    accelerator: 'Ctrl+Shift+H',
+    description: 'Open the Smart History quick-search picker'
   }
 ]

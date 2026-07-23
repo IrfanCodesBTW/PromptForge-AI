@@ -1,6 +1,6 @@
 appId: com.promptforge.ai
 productName: PromptForge AI
-copyright: Copyright © 2024 PromptForge
+copyright: Copyright © 2026 PromptForge
 
 directories:
   buildResources: resources
@@ -28,6 +28,9 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   shortcutName: PromptForge AI
+  installerHeaderIcon: resources/icon.ico
+  installerImage: resources/installer-banner.png
+  uninstallerIcon: resources/icon.ico
 
 mac:
   target:

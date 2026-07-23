@@ -1,14 +1,17 @@
 import { Minus, Square, X } from 'lucide-react'
-import { APP_NAME } from '../../../../shared/constants'
 import { Logo } from '../ui/Logo'
 
 export function Titlebar(): JSX.Element {
   return (
     <div className="titlebar-drag h-9 bg-surface flex items-center justify-between border-b border-border select-none">
       <div className="flex items-center gap-sm px-lg">
-        <Logo size={16} />
-        <span className="text-sm font-semibold text-text-primary">{APP_NAME}</span>
-        <span className="text-xs text-text-muted">v1.0.0</span>
+        <Logo size={18} />
+        <span className="text-sm font-bold text-text-primary tracking-tight">
+          PromptForge <span className="text-[#8B5CF6]">AI</span>
+        </span>
+        <span className="text-[10px] font-semibold text-text-muted px-1.5 py-0.5 rounded bg-surface-card-hover border border-border/50">
+          v1.5.0
+        </span>
       </div>
       <div className="titlebar-no-drag flex items-center h-full">
         <button

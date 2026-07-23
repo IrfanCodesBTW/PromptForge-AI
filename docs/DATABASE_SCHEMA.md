@@ -140,6 +140,28 @@ CREATE TABLE prompt_history (
 
 ---
 
+### `prompt_history_fts` (full-text search index)
+
+Full-text search index over `prompt_history.original_text` and `enhanced_text`. Added in migration `004_history_fts4.sql` (v1.5) to power both the existing in-app History settings tab search and the new `Ctrl+Shift+H` quick-search popup — both consume the same `HistoryService.getRecentHistory()`/`.query()` methods, so there is a single search backend, not two divergent ones.
+
+```sql
+CREATE VIRTUAL TABLE prompt_history_fts USING fts4(
+  original_text,
+  enhanced_text,
+  content='prompt_history'
+);
+```
+
+**Why FTS4, not FTS5:** The original design called for FTS5. Verified directly against the bundled `sql.js@1.11.0` WASM build via `PRAGMA compile_options` that FTS5 is **not** compiled in (only `ENABLE_FTS3`/`ENABLE_FTS3_PARENTHESIS`). FTS4 **is** available in this exact build and provides the same `MATCH` query syntax and real inverted-index search — the only functional difference is no native `bm25()` ranking function. `HistoryService.getRecentHistory()` computes a simple match-count ranking heuristic instead (character-count reduction when the matched term is stripped out via `REPLACE()`), which is adequate for a "top 20 results" quick-search UI. See `docs/new_features_plan.md` Amendments for the full escalation record.
+
+**Sync strategy — no DB triggers:** Same lesson as the `personas` table (see below): the migration runner splits `.sql` files on every literal semicolon and executes fragments independently, which breaks multi-statement `CREATE TRIGGER ... BEGIN ... END` bodies (and even single-statement trigger bodies get split into a header fragment and a dangling `END` fragment, verified directly). `prompt_history_fts` is therefore kept in sync at the application layer in `HistoryService`:
+- `create()` inserts a matching FTS row keyed by the new `prompt_history` row's `rowid` (as `docid`)
+- `deleteByIds()` / `deleteAll()` remove the corresponding FTS rows before/alongside the `prompt_history` deletion
+
+**Backward compatibility:** `HistoryService` checks for the FTS table's existence (`ftsAvailable()`) before using it, and transparently falls back to `LIKE '%term%'` search if the table is missing (e.g., a database created before this migration was ever applied, in tests, or in an unexpected schema state) — search never hard-fails.
+
+---
+
 ### `templates`
 
 Reusable prompt templates with system instructions and variable placeholders.
@@ -182,6 +204,62 @@ CREATE TABLE templates (
   { "name": "context", "type": "text", "default": "" }
 ]
 ```
+
+**`persona_override_allowed` column** (added in migration `003_personas.sql`, v1.5):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `persona_override_allowed` | INTEGER | Whether the active default persona's `system_prompt_injection` may be prepended to this template's system prompt (0/1). Defaults to `1` for new/custom templates. All templates that existed before this migration (the 9 built-in modes seeded in `002_default_templates.sql`) have this explicitly set to `0`, preserving their exact pre-Persona behavior until a user consciously re-enables it. |
+
+---
+
+### `personas`
+
+Named, reusable writing identities (tone/format/system-prompt injection) that can be silently blended into every enhancement call. Added in migration `003_personas.sql` (v1.5).
+
+```sql
+CREATE TABLE personas (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+  name TEXT NOT NULL,
+  description TEXT,
+  tone TEXT NOT NULL CHECK (tone IN ('professional', 'casual', 'technical', 'creative', 'formal')),
+  format_rules TEXT,
+  system_prompt_injection TEXT NOT NULL,
+  is_default INTEGER DEFAULT 0,
+  is_builtin INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+```
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | TEXT | 32-char hex UUID |
+| `name` | TEXT | Display name |
+| `description` | TEXT | Brief explanation of this persona's intent |
+| `tone` | TEXT | One of `professional`, `casual`, `technical`, `creative`, `formal` |
+| `format_rules` | TEXT | Free-text formatting guidance shown in the editor's "Format Rules" field |
+| `system_prompt_injection` | TEXT | Injected verbatim as the outer identity/tone frame ahead of the task-specific system prompt |
+| `is_default` | INTEGER | Whether this is the currently active persona (0/1) — see enforcement note below |
+| `is_builtin` | INTEGER | Whether this ships with the app (0/1). Built-ins can be duplicated but not deleted. |
+| `created_at` | TEXT | ISO 8601 timestamp |
+| `updated_at` | TEXT | ISO 8601 timestamp, updated on modification |
+
+**Single-default enforcement — no DB trigger:** Unlike a typical "only one row can be the default" constraint, this is **not** enforced via a `CREATE TRIGGER`. The migration runner (`runMigrations()` in `src/services/db/database.ts`) splits each migration file on every semicolon character and executes each fragment independently — this is incompatible with multi-statement trigger bodies (`BEGIN ... END` containing an internal `;`), which was verified directly against the runner during implementation and confirmed to fail silently (the runner catches and warns on failed statements rather than throwing). Instead, single-default enforcement lives in the application layer: `PersonaService.create()` and `PersonaService.update()` (`src/services/db/personaService.ts`) wrap "clear the default flag on every other persona, then set the new one" in a single DB transaction whenever `isDefault: true` is passed.
+
+**Composition with `templates.system_prompt`:** When `PromptEngine` builds a system prompt (`src/services/prompt/engine.ts`), if a default persona exists and the resolved template/mode allows it (`persona_override_allowed != 0`), the final system prompt is:
+
+```text
+[persona.system_prompt_injection]
+
+---
+
+[template.system_prompt or built-in mode system prompt]
+```
+
+If no persona is set as default, behavior is byte-identical to pre-v1.5 (V1).
+
+**Built-in seed data:** 5 built-in personas are seeded inline in `003_personas.sql` (not a separate `migrations/seeds/` file — the migration runner only scans the top-level `migrations/` directory, not subdirectories): `General` (default, neutral), `Developer` (technical), `Executive` (formal), `Creative` (expressive), `Social` (casual).
 
 ---
 
@@ -564,6 +642,54 @@ INSERT INTO hotkeys (id, action, keybinding) VALUES
 -- Default providers
 INSERT INTO providers (id, name, type, base_url, default_model, is_active, priority) VALUES
   (lower(hex(randomblob(16))), 'ollama', 'local', 'http://localhost:11434', 'llama3.1', 1, 100);
+
+---
+
+### Migration: `003_personas.sql` (v1.5)
+
+```sql
+-- Creates personas table and adds persona_override_allowed column to templates
+
+CREATE TABLE IF NOT EXISTS personas (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+  name TEXT NOT NULL,
+  description TEXT,
+  tone TEXT NOT NULL CHECK (tone IN ('professional', 'casual', 'technical', 'creative', 'formal')),
+  format_rules TEXT,
+  system_prompt_injection TEXT NOT NULL,
+  is_default INTEGER DEFAULT 0,
+  is_builtin INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_personas_is_default ON personas(is_default) WHERE is_default = 1;
+CREATE INDEX IF NOT EXISTS idx_personas_is_builtin ON personas(is_builtin) WHERE is_builtin = 1;
+
+ALTER TABLE templates ADD COLUMN persona_override_allowed INTEGER DEFAULT 1;
+UPDATE templates SET persona_override_allowed = 0 WHERE is_builtin = 1;
+```
+
+---
+
+### Migration: `004_history_fts4.sql` (v1.5)
+
+```sql
+-- FTS4 full-text search index over prompt_history (original_text and enhanced_text)
+
+CREATE VIRTUAL TABLE IF NOT EXISTS prompt_history_fts USING fts4(
+  original_text,
+  enhanced_text,
+  content='prompt_history'
+);
+
+INSERT INTO prompt_history_fts (docid, original_text, enhanced_text)
+SELECT rowid, original_text, enhanced_text FROM prompt_history;
+```
+
+> **Architecture Rationale — Application-Layer Sync & Single-Default Enforcement:**
+> 1. **FTS4 Choice**: `sql.js@1.11.0` WASM build includes `ENABLE_FTS3`/`ENABLE_FTS4` modules. FTS4 provides the same `MATCH` syntax and inverted index efficiency as FTS5.
+> 2. **Application-Layer Sync**: The `runMigrations()` runner splits SQL files on every literal semicolon, which breaks multi-statement `CREATE TRIGGER ... BEGIN ... END` blocks into invalid fragments. FTS index synchronization and single-default persona enforcement are handled atomically inside `HistoryService` and `PersonaService` within database transactions.
 ```
 
 ---

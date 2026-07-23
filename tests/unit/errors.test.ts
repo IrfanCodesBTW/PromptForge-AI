@@ -15,7 +15,11 @@ import {
 
 describe('Structured Errors', () => {
   it('should instantiate ValidationError with standard properties', () => {
-    const err = new ValidationError('Invalid request text', 'Input was too long', 'Try sending a shorter text')
+    const err = new ValidationError(
+      'Invalid request text',
+      'Input was too long',
+      'Try sending a shorter text'
+    )
     expect(err.name).toBe('ValidationError')
     expect(err.code).toBe('VALIDATION_ERROR')
     expect(err.message).toBe('Invalid request text')

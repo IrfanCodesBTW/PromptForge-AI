@@ -100,6 +100,12 @@ interface PromptForgeAPI {
 | `promptforge:error` | Main → Renderer | `AppError` | Global error notification |
 | `promptforge:clipboard:read` | Renderer → Main | `void` | Read current clipboard text content |
 | `promptforge:clipboard:write` | Renderer → Main | `string` | Write enhanced text to clipboard |
+| `promptforge:refinement:start` | Renderer → Main | `RefinementStartPayload` | Initialize an in-memory multi-turn refinement session |
+| `promptforge:refinement:send-instruction` | Renderer → Main | `RefinementInstructionPayload` | Send follow-up instruction to refine output |
+| `promptforge:refinement:token-chunk` | Main → Renderer | `RefinementTokenChunkPayload` | Stream token chunk of refinement response |
+| `promptforge:refinement:done` | Main → Renderer | `RefinementDonePayload` | Signal completion of refinement stream turn |
+| `promptforge:refinement:error` | Main → Renderer | `RefinementErrorPayload` | Error signal during refinement stream |
+| `promptforge:refinement:end-session` | Renderer → Main | `{ sessionId: string }` | Close and purge in-memory refinement session |
 
 
 
@@ -362,7 +368,43 @@ interface PaginatedResult<T> {
 }
 ```
 
+---
 
+### v1.5 Intelligence Features — IPC Channels
+
+The following channels were added across the v1.5 phases (Streaming, Preview Window, Personas, Smart History, Refinement Loop). They follow the exact naming/registration convention already used in `src/shared/constants.ts` (`IPC_CHANNELS`), `src/main/ipc/handlers.ts` (Zod-validated handlers), and `src/preload/index.ts` (channel whitelist) — this section documents the real, verified channel names, not aspirational ones.
+
+**Persona Profiles (Phase 3):**
+
+| Channel | Direction | Payload | Description |
+|---------|-----------|---------|-------------|
+| `promptforge:persona:list` | Renderer → Main | `void` | List all personas (built-in + custom) |
+| `promptforge:persona:get-default` | Renderer → Main | `void` | Get the currently active default persona, or `null` |
+| `promptforge:persona:create` | Renderer → Main | `PersonaCreateInput` (see `src/shared/schemas/persona.ts`) | Create a new persona |
+| `promptforge:persona:update` | Renderer → Main | `PersonaUpdateInput` | Update an existing persona |
+| `promptforge:persona:delete` | Renderer → Main | `string` (id) | Delete a non-built-in persona (throws for built-ins) |
+| `promptforge:persona:set-default` | Renderer → Main | `string` (id) | Set a persona as the active default |
+
+**Floating Preview Window (Phase 2):**
+
+| Channel | Direction | Payload | Description |
+|---------|-----------|---------|-------------|
+| `promptforge:preview:token-chunk` | Main → Renderer | `PreviewTokenChunkPayload` | Incremental streamed token chunk |
+| `promptforge:preview:stream-done` | Main → Renderer | `PreviewStreamDonePayload` | Streaming/enhancement completed |
+| `promptforge:preview:stream-error` | Main → Renderer | `PreviewStreamErrorPayload` | Both streaming AND non-streaming fallback failed |
+| `promptforge:preview:accept` | Renderer → Main | `void` | Accept — write to clipboard, close window |
+| `promptforge:preview:reject` | Renderer → Main | `void` | Reject — discard, close window |
+| `promptforge:preview:rerun` | Renderer → Main | `void` | Re-run — clear output, re-trigger same enhance call |
+
+**Smart Clipboard History Stack (Phase 4):**
+
+| Channel | Direction | Payload | Description |
+|---------|-----------|---------|-------------|
+| `promptforge:history:recent` | Renderer → Main | `{ limit: number; query?: string }` | Top-N history entries, FTS4-ranked when `query` given |
+| `promptforge:history:recopy` | Renderer → Main | `string` (id) | Write an entry's `enhancedText` to the clipboard |
+| `promptforge:history:clear-all` | Renderer → Main | `void` | Delete all history entries |
+| `promptforge:history:restore` | Renderer → Main | `{ originalText, enhancedText, provider, model, category?, tokensUsed?, latencyMs? }` | Re-create a history entry (used by the 4-second undo toast after Delete) |
+| `promptforge:history:window-close` | Renderer → Main | `void` | Close the Ctrl+Shift+H history picker window |
 
 ---
 

@@ -12,10 +12,14 @@ export function Sidebar(): JSX.Element {
   return (
     <aside className="w-[220px] flex-shrink-0 bg-surface border-r border-border flex flex-col select-none">
       <div className="p-lg flex items-center gap-sm border-b border-border/60 mb-sm">
-        <Logo size={24} />
+        <Logo size={26} />
         <div>
-          <h1 className="text-sm font-semibold text-text-primary leading-none">PromptForge AI</h1>
-          <p className="text-[10px] text-text-muted mt-xs">Local Prompt Toolkit</p>
+          <h1 className="text-sm font-bold text-text-primary leading-none tracking-tight">
+            PromptForge <span className="text-[#8B5CF6]">AI</span>
+          </h1>
+          <p className="text-[9px] text-text-muted mt-1 leading-tight font-medium">
+            Forge Better Prompts. Get Better Results.
+          </p>
         </div>
       </div>
       <div className="p-md">

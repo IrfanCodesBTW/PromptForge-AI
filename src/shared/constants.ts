@@ -13,6 +13,15 @@ export const IPC_CHANNELS = {
   ENHANCE_STREAM: 'promptforge:enhance:stream',
   ENHANCE_ERROR: 'promptforge:enhance:error',
 
+  // Preview window (floating streaming preview overlay)
+  PREVIEW_TOKEN_CHUNK: 'promptforge:preview:token-chunk',
+  PREVIEW_STREAM_DONE: 'promptforge:preview:stream-done',
+  PREVIEW_STREAM_ERROR: 'promptforge:preview:stream-error',
+  PREVIEW_SOURCE_TEXT: 'promptforge:preview:source-text',
+  PREVIEW_ACCEPT: 'promptforge:preview:accept',
+  PREVIEW_REJECT: 'promptforge:preview:reject',
+  PREVIEW_RERUN: 'promptforge:preview:rerun',
+
   // Settings
   SETTINGS_GET: 'promptforge:settings:get',
   SETTINGS_SET: 'promptforge:settings:set',
@@ -25,6 +34,11 @@ export const IPC_CHANNELS = {
   HISTORY_DELETE: 'promptforge:history:delete',
   HISTORY_FAVORITE: 'promptforge:history:favorite',
   HISTORY_EXPORT: 'promptforge:history:export',
+  HISTORY_RECENT: 'promptforge:history:recent',
+  HISTORY_CLEAR_ALL: 'promptforge:history:clear-all',
+  HISTORY_RECOPY: 'promptforge:history:recopy',
+  HISTORY_WINDOW_CLOSE: 'promptforge:history:window-close',
+  HISTORY_RESTORE: 'promptforge:history:restore',
 
   // Templates
   TEMPLATE_LIST: 'promptforge:template:list',
@@ -45,9 +59,26 @@ export const IPC_CHANNELS = {
   HOTKEY_UPDATE: 'promptforge:hotkey:update',
   HOTKEY_TRIGGERED: 'promptforge:hotkey:triggered',
 
+  // Personas
+  PERSONA_LIST: 'promptforge:persona:list',
+  PERSONA_GET_DEFAULT: 'promptforge:persona:get-default',
+  PERSONA_CREATE: 'promptforge:persona:create',
+  PERSONA_UPDATE: 'promptforge:persona:update',
+  PERSONA_DELETE: 'promptforge:persona:delete',
+  PERSONA_SET_DEFAULT: 'promptforge:persona:set-default',
+
+  // Refinement Loop (multi-turn refinement)
+  REFINEMENT_START: 'promptforge:refinement:start',
+  REFINEMENT_SEND_INSTRUCTION: 'promptforge:refinement:send-instruction',
+  REFINEMENT_TOKEN_CHUNK: 'promptforge:refinement:token-chunk',
+  REFINEMENT_DONE: 'promptforge:refinement:done',
+  REFINEMENT_ERROR: 'promptforge:refinement:error',
+  REFINEMENT_END_SESSION: 'promptforge:refinement:end-session',
+
   // Window
   WINDOW_TOGGLE: 'promptforge:window:toggle',
   WINDOW_OPEN: 'promptforge:window:open',
+  WINDOW_CLOSE: 'promptforge:window:close',
 
   // App
   APP_VERSION: 'promptforge:app:version',
@@ -129,7 +160,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   startWithSystem: false,
   minimizeToTray: true,
   notifications: 'on',
-  dataRetentionDays: -1
+  dataRetentionDays: -1,
+  previewWindowEnabled: false,
+  refinementSessionTimeoutMinutes: 5
 }
 
 // ----- Default Hotkey Bindings -----
@@ -173,6 +206,9 @@ export const DEFAULT_PROVIDERS = {
 // ----- App Constants -----
 
 export const APP_NAME = 'PromptForge AI'
+export const APP_TAGLINE = 'Forge Better Prompts. Get Better Results.'
+export const COMPANY_NAME = 'PromptForge'
+export const COPYRIGHT_NOTICE = 'Copyright © 2026 PromptForge'
 export const APP_ID = 'com.promptforge.ai'
 export const DB_FILENAME = 'promptforge.db'
 export const CONFIG_FILENAME = 'promptforge.config.json'

@@ -296,12 +296,12 @@ Replace Selected Text
 -   Prompt history
 -   Templates
 
-### v1.5
+### v1.5 — Intelligence
 
--   Context detection
--   Prompt scoring
--   Command palette
--   Automatic routing
+-   Real-Time Floating Streaming Preview Window
+-   Persona Profiles System (tone, format rules, system prompt injection)
+-   Smart History Stack + FTS4 Full-Text Fast Search (Ctrl+Shift+H quick picker)
+-   Multi-Turn Conversational Refinement Loop
 
 ### v2
 

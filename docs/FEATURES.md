@@ -392,6 +392,104 @@ Centralized configuration interface for all app behavior. Settings persist local
 
 ---
 
+## 10. Floating Streaming Preview Window
+
+**Priority:** P0  
+**Version:** v1.5
+
+### Description
+
+A lightweight, transparent, frameless floating overlay window (`420×420px`) that displays live streaming token output near the cursor position when global hotkeys are triggered. Enables users to inspect, accept, reject, or re-run an enhancement before any text is written to the system clipboard.
+
+### User Story
+
+> As a user, I want to preview AI enhancement streaming output in real-time near my cursor before committing it to my clipboard — so I can accept, reject, or refine the result without overwriting my clipboard prematurely.
+
+### Acceptance Criteria
+
+- [x] Sized 420px wide with adaptive height up to 420px, positioned near current cursor point
+- [x] Streams token chunks incrementally with a blinking cursor indicator
+- [x] Displays active AI provider name and total latency pill badge
+- [x] Exposes explicit Accept (Enter), Reject (Escape), and Re-run (Ctrl+R) actions
+- [x] Clipboard write and optional auto-paste occur ONLY when Accept is triggered
+- [x] Supports hybrid fallback notice when streaming is unsupported
+- [x] Feature-flagged behind `preview_window_enabled` setting (defaults to off)
+
+---
+
+## 11. Persona Profiles System
+
+**Priority:** P0  
+**Version:** v1.5
+
+### Description
+
+Custom prompt identity profiles that inject structured persona constraints (tone, format rules, system prompt injection) into every prompt enhancement. Managed via a dedicated Settings tab and accessible from the system tray menu.
+
+### User Story
+
+> As a user, I want to define and switch active persona profiles (e.g. Developer, Executive, Creative) — so my prompt enhancements automatically adopt my preferred tone, format rules, and role identities.
+
+### Acceptance Criteria
+
+- [x] SQLite `personas` table with single-default enforcement at application layer
+- [x] Built-in personas (General, Developer, Executive, Creative, Social) seeded by default
+- [x] Full CRUD via dedicated Settings → Personas tab with live preview panel
+- [x] System tray "Persona" radio-item submenu for quick default selection
+- [x] Prepends persona `systemPromptInjection` to system prompts using `---` divider
+- [x] Respects `persona_override_allowed` flag on templates
+
+---
+
+## 12. Smart History Stack + FTS4 Full-Text Search
+
+**Priority:** P0  
+**Version:** v1.5
+
+### Description
+
+A speed-first quick-search popup (`Ctrl+Shift+H`) powered by SQLite FTS4 inverted index search, featuring side-by-side word diffs, debounced search, matched term highlighting, keyboard navigation, and one-keystroke re-copy.
+
+### User Story
+
+> As a user, I want to quickly search my past prompt enhancements using full-text search (`Ctrl+Shift+H`) and copy or inspect diffs — so I can instantly reuse high-quality prompt outputs.
+
+### Acceptance Criteria
+
+- [x] `prompt_history_fts` virtual table using SQLite FTS4 with term-frequency ranking
+- [x] Transparent, frameless `560×480px` popup window triggered via `Ctrl+Shift+H`
+- [x] Side-by-side word diff view highlighting additions and deletions
+- [x] Matched search terms highlighted with `<mark>` style
+- [x] Actions: Re-copy (clipboard + toast), Use as Base (starts refinement session), Delete (with 4s undo toast)
+- [x] Full keyboard navigation (Up/Down/Enter/Delete/Escape)
+- [x] Shared FTS4 search backend across both quick picker popup and main History tab
+
+---
+
+## 13. Multi-Turn Conversational Refinement Loop
+
+**Priority:** P0  
+**Version:** v1.5
+
+### Description
+
+An interactive multi-turn prompt refinement capability embedded within the floating preview window. Users can type follow-up instructions (e.g. "make it more concise", "add error handling") to conversationally evolve an enhanced prompt output before saving.
+
+### User Story
+
+> As a user, I want to refine an enhanced prompt by sending follow-up instructions inside the preview window — so I can tweak and perfect the generated prompt iteratively.
+
+### Acceptance Criteria
+
+- [x] In-memory `RefinementSessionManager` holding active sessions with 5-minute inactivity auto-expiry
+- [x] Sub-800 token prompt budget assembling original prompt, current output, turn history, instruction, and active persona
+- [x] Real-time streaming response chunks (`REFINEMENT_TOKEN_CHUNK`) displayed in preview window
+- [x] Embedded 36px chat input bar with auto-focus and turn history thread view
+- [x] "Use as Base" in History Picker initializes a new refinement session from past history entries
+- [x] Configurable session timeout in Settings (`refinementSessionTimeoutMinutes`)
+
+---
+
 ## Version Roadmap
 
 ### v1.0 — MVP
@@ -405,14 +503,14 @@ Centralized configuration interface for all app behavior. Settings persist local
 | Prompt History | P0 |
 | Settings & Preferences | P0 |
 
-### v1.5 — Enhanced Experience
+### v1.5 — Intelligence
 
-| Feature | Priority |
-|---------|----------|
-| Smart Context Detection | P1 |
-| Floating Command Palette | P1 |
-| Template Marketplace (community sharing) | P2 |
-| Usage Analytics Dashboard | P2 |
+| Feature | Priority | Status |
+|---------|----------|--------|
+| Floating Streaming Preview Window | P0 | Completed |
+| Persona Profiles System | P0 | Completed |
+| Smart History Stack + FTS4 Search | P0 | Completed |
+| Multi-Turn Conversational Refinement Loop | P0 | Completed |
 
 ### v2.0 — Power User
 

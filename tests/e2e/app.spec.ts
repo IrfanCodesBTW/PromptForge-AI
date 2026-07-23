@@ -18,7 +18,10 @@ test.describe('PromptForge AI Electron E2E', () => {
       })
       firstWindow = await electronApp.firstWindow()
     } catch (err) {
-      console.warn('[E2E] Skipped launching application (no compiled binaries found or headful required):', err)
+      console.warn(
+        '[E2E] Skipped launching application (no compiled binaries found or headful required):',
+        err
+      )
     }
   })
 
@@ -57,7 +60,7 @@ test.describe('PromptForge AI Electron E2E', () => {
 
     // Scan page for accessibility violations
     const results = await new AxeBuilder({ page: firstWindow }).analyze()
-    
+
     // Assert no critical accessibility violations exist
     const criticalViolations = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'

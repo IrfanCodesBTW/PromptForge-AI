@@ -169,6 +169,10 @@ export interface AppSettings {
   minimizeToTray: boolean
   notifications: 'on' | 'off' | 'errors-only'
   dataRetentionDays: number
+  /** Feature flag: route hotkey triggers through the floating preview window instead of instant clipboard write */
+  previewWindowEnabled: boolean
+  /** Session timeout in minutes for in-memory multi-turn refinement sessions */
+  refinementSessionTimeoutMinutes: number
 }
 
 // ----- Tags -----
@@ -178,6 +182,23 @@ export interface Tag {
   name: string
   color: string
   createdAt: string
+}
+
+// ----- Personas -----
+
+export type PersonaTone = 'professional' | 'casual' | 'technical' | 'creative' | 'formal'
+
+export interface Persona {
+  id: string
+  name: string
+  description?: string
+  tone: PersonaTone
+  formatRules?: string
+  systemPromptInjection: string
+  isDefault: boolean
+  isBuiltin: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 // ----- IPC Payloads -----
@@ -202,4 +223,90 @@ export interface EnhanceResult {
 export interface StreamChunk {
   chunk: string
   done: boolean
+}
+
+// ----- Preview Window -----
+
+export type PreviewAction = 'accept' | 'reject' | 'rerun'
+
+export interface PreviewTokenChunkPayload {
+  text: string
+  done: boolean
+  provider: string
+  isFallback: boolean
+}
+
+export interface PreviewSourceTextPayload {
+  /** The original text that was selected and sent for enhancement. Used as
+   *  the `originalText` field when starting a multi-turn refinement session. */
+  sourceText: string
+}
+
+export interface PreviewStreamDonePayload {
+  enhanced: string
+  provider: string
+  model: string
+  tokensUsed: number
+  latencyMs: number
+  historyId: string
+  usedStreamFallback: boolean
+}
+
+export interface PreviewStreamErrorPayload {
+  code: string
+  message: string
+}
+
+export interface PreviewActionPayload {
+  action: PreviewAction
+}
+
+// ----- Refinement Loop -----
+
+export interface RefinementTurn {
+  instruction: string
+  output: string
+  timestamp: string
+}
+
+export interface RefinementStartPayload {
+  originalText: string
+  currentOutput: string
+  mode?: EnhanceMode
+  templateId?: string
+  provider?: string
+  model?: string
+}
+
+export interface RefinementStartResult {
+  sessionId: string
+}
+
+export interface RefinementInstructionPayload {
+  sessionId: string
+  instruction: string
+}
+
+export interface RefinementTokenChunkPayload {
+  sessionId: string
+  text: string
+  done: boolean
+  provider: string
+  isFallback: boolean
+}
+
+export interface RefinementDonePayload {
+  sessionId: string
+  enhanced: string
+  provider: string
+  model: string
+  tokensUsed: number
+  latencyMs: number
+  usedStreamFallback: boolean
+}
+
+export interface RefinementErrorPayload {
+  sessionId: string
+  code: string
+  message: string
 }

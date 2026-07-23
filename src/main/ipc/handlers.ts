@@ -4,13 +4,28 @@
 // Registers all ipcMain.handle handlers that the renderer calls.
 // Validates parameters on all incoming IPC invoke calls to prevent attacks.
 
-import { ipcMain, app, BrowserWindow } from 'electron'
+import { ipcMain, app, BrowserWindow, clipboard } from 'electron'
 import { z } from 'zod'
 import type { DatabaseWrapper } from '../../services/db/database'
 import { IPC_CHANNELS } from '../../shared/constants'
 import { PromptEngine } from '../../services/prompt/engine'
 import { HistoryService } from '../../services/db/history'
 import { TemplateService } from '../../services/db/templates'
+import { PersonaService } from '../../services/db/personaService'
+import {
+  personaCreateSchema,
+  personaUpdateSchema,
+  personaIdSchema
+} from '../../shared/schemas/persona'
+import {
+  refinementStartSchema,
+  refinementInstructionSchema,
+  refinementSessionIdSchema
+} from '../../shared/schemas/refinement'
+import { refinementSessionManager } from '../../services/refinementSession'
+import { refreshPersonaMenu } from '../tray/tray'
+import { closeHistoryWindow, getOrCreateHistoryWindow } from '../windows/historyWindow'
+import { getOrCreatePreviewWindow } from '../windows/previewWindow'
 import { GroqProvider } from '../../services/ai/groq'
 import { OpenAIProvider } from '../../services/ai/openai'
 import { OllamaProvider } from '../../services/ai/ollama'
@@ -67,6 +82,21 @@ const historyFavoriteSchema = z.object({
   isFavorite: z.boolean()
 })
 
+const historyRecentSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(20),
+  query: z.string().max(200).optional()
+})
+
+const historyRestoreSchema = z.object({
+  originalText: z.string().min(1).max(50000),
+  enhancedText: z.string().min(1).max(50000),
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(100),
+  category: z.string().max(50).optional(),
+  tokensUsed: z.number().int().min(0).optional(),
+  latencyMs: z.number().int().min(0).optional()
+})
+
 const templateCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(1000).optional(),
@@ -117,6 +147,7 @@ export function registerIpcHandlers(
   const engine = new PromptEngine(db)
   const history = new HistoryService(db)
   const templates = new TemplateService(db)
+  const personas = new PersonaService(db)
 
   // Listen to Renderer logs and pipe them to local disk
   ipcMain.on('promptforge:app:log', (_event, entry) => {
@@ -210,6 +241,47 @@ export function registerIpcHandlers(
       history.toggleFavorite(parsed.id, parsed.isFavorite)
     }
   )
+
+  ipcMain.handle(
+    IPC_CHANNELS.HISTORY_RECENT,
+    (_event, data: { limit?: number; query?: string }) => {
+      const parsed = historyRecentSchema.parse({ limit: data?.limit ?? 20, query: data?.query })
+      return history.getRecentHistory(parsed.limit, parsed.query)
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.HISTORY_CLEAR_ALL, () => {
+    history.deleteAll()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.HISTORY_RECOPY, (_event, id: string) => {
+    z.string()
+      .regex(/^[a-fA-F0-9]{32}$/)
+      .parse(id)
+    const entry = history.getById(id)
+    if (entry) {
+      clipboard.writeText(entry.enhancedText)
+      return true
+    }
+    return false
+  })
+
+  ipcMain.handle(IPC_CHANNELS.HISTORY_WINDOW_CLOSE, () => {
+    closeHistoryWindow()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.HISTORY_RESTORE, (_event, data: unknown) => {
+    const parsed = historyRestoreSchema.parse(data)
+    return history.create({
+      originalText: parsed.originalText,
+      enhancedText: parsed.enhancedText,
+      provider: parsed.provider,
+      model: parsed.model,
+      category: parsed.category,
+      tokensUsed: parsed.tokensUsed,
+      latencyMs: parsed.latencyMs
+    })
+  })
 
   // ===== Templates =====
 
@@ -426,6 +498,49 @@ export function registerIpcHandlers(
     }
   })
 
+  // ===== Personas =====
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_LIST, () => {
+    return personas.getAll()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_GET_DEFAULT, () => {
+    return personas.getDefault()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_CREATE, (_event, data) => {
+    const parsed = personaCreateSchema.parse(data)
+    const created = personas.create({
+      name: parsed.name,
+      description: parsed.description,
+      tone: parsed.tone,
+      formatRules: parsed.formatRules,
+      systemPromptInjection: parsed.systemPromptInjection,
+      isDefault: parsed.isDefault
+    })
+    refreshPersonaMenu()
+    return created
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_UPDATE, (_event, data: { id: string }) => {
+    const parsed = personaUpdateSchema.parse(data)
+    const { id, ...rest } = parsed
+    personas.update(id, rest)
+    refreshPersonaMenu()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_DELETE, (_event, id: string) => {
+    personaIdSchema.parse(id)
+    personas.delete(id)
+    refreshPersonaMenu()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PERSONA_SET_DEFAULT, (_event, id: string) => {
+    personaIdSchema.parse(id)
+    personas.setDefault(id)
+    refreshPersonaMenu()
+  })
+
   // ===== App =====
 
   ipcMain.handle(IPC_CHANNELS.APP_VERSION, () => {
@@ -458,6 +573,105 @@ export function registerIpcHandlers(
         win.hide()
         break
     }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_OPEN, (_event, data: { window: string }) => {
+    if (data?.window === 'preview') {
+      getOrCreatePreviewWindow()
+    } else if (data?.window === 'history') {
+      getOrCreateHistoryWindow()
+    }
+  })
+
+  // ===== Preview Window Actions =====
+  // Accept/Reject/Re-run are dispatched from the preview window's renderer.
+  // The HotkeyManager owns the pending-preview state (input text, mode,
+  // options) since it's the one that spawned the window in the first place.
+
+  ipcMain.handle(IPC_CHANNELS.PREVIEW_ACCEPT, async () => {
+    const hm = getHotkeyManager()
+    if (hm) await hm.handlePreviewAccept()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PREVIEW_REJECT, () => {
+    const hm = getHotkeyManager()
+    if (hm) hm.handlePreviewReject()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PREVIEW_RERUN, async () => {
+    const hm = getHotkeyManager()
+    if (hm) await hm.handlePreviewRerun()
+  })
+
+  // ===== Refinement Loop Actions =====
+
+  ipcMain.handle(IPC_CHANNELS.REFINEMENT_START, (_event, data) => {
+    const parsed = refinementStartSchema.parse(data)
+    const session = refinementSessionManager.createSession(db, {
+      originalText: parsed.originalText,
+      currentOutput: parsed.currentOutput,
+      mode: parsed.mode as any,
+      templateId: parsed.templateId,
+      provider: parsed.provider,
+      model: parsed.model
+    })
+    return { sessionId: session.sessionId }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.REFINEMENT_SEND_INSTRUCTION, async (event, data) => {
+    const parsed = refinementInstructionSchema.parse(data)
+    const timeoutRow = db
+      .prepare("SELECT value FROM settings WHERE key = 'refinementSessionTimeoutMinutes'")
+      .get() as { value: string } | undefined
+    const timeoutMinutes = timeoutRow?.value ? parseInt(timeoutRow.value, 10) : 5
+    const session = refinementSessionManager.getSession(parsed.sessionId, timeoutMinutes)
+
+    if (!session) {
+      throw new Error(`Refinement session ${parsed.sessionId} not found or expired`)
+    }
+
+    try {
+      const streamGen = session.refine(parsed.instruction)
+      let next = await streamGen.next()
+      while (!next.done) {
+        const chunk = next.value
+        event.sender.send(IPC_CHANNELS.REFINEMENT_TOKEN_CHUNK, {
+          sessionId: session.sessionId,
+          text: chunk.text,
+          done: chunk.done,
+          provider: chunk.provider,
+          isFallback: chunk.isFallback
+        })
+        next = await streamGen.next()
+      }
+
+      const result = next.value
+      event.sender.send(IPC_CHANNELS.REFINEMENT_DONE, {
+        sessionId: session.sessionId,
+        enhanced: result.text,
+        provider: result.provider,
+        model: result.model,
+        tokensUsed: result.tokensUsed,
+        latencyMs: result.latencyMs,
+        usedStreamFallback: result.usedStreamFallback ?? false
+      })
+
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      event.sender.send(IPC_CHANNELS.REFINEMENT_ERROR, {
+        sessionId: session.sessionId,
+        code: 'REFINEMENT_FAILED',
+        message
+      })
+      throw error
+    }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.REFINEMENT_END_SESSION, (_event, data) => {
+    const parsed = refinementSessionIdSchema.parse(data)
+    refinementSessionManager.endSession(parsed.sessionId)
+    return { success: true }
   })
 
   console.log('[IPC] All handlers registered')

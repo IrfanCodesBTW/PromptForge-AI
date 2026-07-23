@@ -32,6 +32,20 @@
   --color-pill-bg: #f1ede3;
   --color-pill-bg-hover: #e8e3d6;
 
+  /* Diff highlight tokens (Smart History diff view, v1.5) */
+  --color-success-highlight: #d5ecdc;
+  --color-error-highlight: #fbdcd9;
+  --color-primary-highlight: #dcecdf;
+
+  /* Official Brand Tokens (PromptForge AI) */
+  --brand-primary: #3b82f6;
+  --brand-secondary: #8b5cf6;
+  --brand-background: #0b1220;
+  --brand-slate: #1e293b;
+  --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  --brand-surface: #0b1220;
+  --brand-icon: #ffffff;
+
   /* Typography */
   --font-serif: 'GT Sectra', 'Tiempos Headline', Georgia, serif;
   --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
@@ -62,6 +76,11 @@
   --color-disabled-text: #706b62;
   --color-pill-bg: #2b2925;
   --color-pill-bg-hover: #3d3930;
+
+  /* Diff highlight tokens (Smart History diff view, v1.5) — dark mode */
+  --color-success-highlight: #1f3327;
+  --color-error-highlight: #3a2422;
+  --color-primary-highlight: #223a2e;
 }
 
 /* ---- Base Resets ---- */

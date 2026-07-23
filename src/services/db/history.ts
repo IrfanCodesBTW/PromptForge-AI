@@ -9,6 +9,7 @@ import { HISTORY_PAGE_SIZE } from '../../shared/constants'
 
 export class HistoryService {
   private db: DatabaseWrapper
+  private ftsAvailableCache: boolean | null = null
 
   constructor(db: DatabaseWrapper) {
     this.db = db
@@ -48,6 +49,8 @@ export class HistoryService {
         data.sourceApp || null
       )
 
+    this.syncFtsInsert(id, data.originalText, data.enhancedText)
+
     return id
   }
 
@@ -68,7 +71,10 @@ export class HistoryService {
   }
 
   /**
-   * Query history with filters and pagination
+   * Query history with filters and pagination.
+   * The `search` filter uses the prompt_history_fts FTS4 index when
+   * available (falls back to LIKE if the FTS table doesn't exist yet,
+   * e.g. pre-migration or in older test fixtures).
    */
   query(
     filter: HistoryFilter,
@@ -77,13 +83,19 @@ export class HistoryService {
   ): PaginatedResult<HistoryEntry> {
     const conditions: string[] = []
     const params: unknown[] = []
+    let useFtsJoin = false
 
     // Build WHERE clause from filters
     if (filter.search) {
-      // Use LIKE for text search
-      conditions.push(`(ph.original_text LIKE ? OR ph.enhanced_text LIKE ?)`)
-      const searchParam = `%${filter.search}%`
-      params.push(searchParam, searchParam)
+      if (this.ftsAvailable()) {
+        useFtsJoin = true
+        conditions.push('prompt_history_fts MATCH ?')
+        params.push(this.sanitizeFtsQuery(filter.search))
+      } else {
+        conditions.push(`(ph.original_text LIKE ? OR ph.enhanced_text LIKE ?)`)
+        const searchParam = `%${filter.search}%`
+        params.push(searchParam, searchParam)
+      }
     }
 
     if (filter.provider) {
@@ -112,10 +124,13 @@ export class HistoryService {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const ftsJoinClause = useFtsJoin
+      ? 'JOIN prompt_history_fts ON prompt_history_fts.docid = ph.rowid'
+      : ''
 
     // Count total
     const countRow = this.db
-      .prepare(`SELECT COUNT(*) as total FROM prompt_history ph ${whereClause}`)
+      .prepare(`SELECT COUNT(*) as total FROM prompt_history ph ${ftsJoinClause} ${whereClause}`)
       .get(...params) as { total: number }
 
     const total = countRow.total
@@ -127,6 +142,7 @@ export class HistoryService {
       .prepare(
         `SELECT ph.*, t.name AS template_name
          FROM prompt_history ph
+         ${ftsJoinClause}
          LEFT JOIN templates t ON ph.template_id = t.id
          ${whereClause}
          ORDER BY ph.created_at DESC
@@ -144,6 +160,45 @@ export class HistoryService {
   }
 
   /**
+   * Fast top-N history lookup for the Ctrl+Shift+H quick-search popup.
+   * Uses FTS4 MATCH + a simple match-count ranking heuristic (FTS4 has no
+   * native bm25() function) when a query is provided; falls back to
+   * ORDER BY created_at DESC LIMIT ? when query is omitted or FTS is
+   * unavailable.
+   */
+  getRecentHistory(limit: number, query?: string): HistoryEntry[] {
+    if (query && query.trim().length > 0 && this.ftsAvailable()) {
+      const rows = this.db
+        .prepare(
+          `SELECT ph.*, t.name AS template_name,
+                  (LENGTH(ph.original_text) + LENGTH(ph.enhanced_text)
+                   - LENGTH(REPLACE(LOWER(ph.original_text || ' ' || ph.enhanced_text), LOWER(?), ''))) AS match_score
+           FROM prompt_history ph
+           JOIN prompt_history_fts ON prompt_history_fts.docid = ph.rowid
+           LEFT JOIN templates t ON ph.template_id = t.id
+           WHERE prompt_history_fts MATCH ?
+           ORDER BY match_score DESC, ph.created_at DESC
+           LIMIT ?`
+        )
+        .all(query.trim(), this.sanitizeFtsQuery(query), limit) as (HistoryRow & {
+        match_score: number
+      })[]
+      return rows.map((row) => this.mapRow(row))
+    }
+
+    const rows = this.db
+      .prepare(
+        `SELECT ph.*, t.name AS template_name
+         FROM prompt_history ph
+         LEFT JOIN templates t ON ph.template_id = t.id
+         ORDER BY ph.created_at DESC, ph.rowid DESC
+         LIMIT ?`
+      )
+      .all(limit) as HistoryRow[]
+    return rows.map((row) => this.mapRow(row))
+  }
+
+  /**
    * Toggle favorite status
    */
   toggleFavorite(id: string, isFavorite: boolean): void {
@@ -156,7 +211,18 @@ export class HistoryService {
    * Delete history entries by IDs
    */
   deleteByIds(ids: string[]): void {
+    if (ids.length === 0) return
     const placeholders = ids.map(() => '?').join(', ')
+
+    if (this.ftsAvailable()) {
+      const rowIds = this.db
+        .prepare(`SELECT rowid FROM prompt_history WHERE id IN (${placeholders})`)
+        .all(...ids) as { rowid: number }[]
+      for (const { rowid } of rowIds) {
+        this.db.prepare('DELETE FROM prompt_history_fts WHERE docid = ?').run(rowid)
+      }
+    }
+
     this.db.prepare(`DELETE FROM prompt_history WHERE id IN (${placeholders})`).run(...ids)
   }
 
@@ -164,6 +230,9 @@ export class HistoryService {
    * Delete all history
    */
   deleteAll(): void {
+    if (this.ftsAvailable()) {
+      this.db.prepare('DELETE FROM prompt_history_fts').run()
+    }
     this.db.prepare('DELETE FROM prompt_history').run()
   }
 
@@ -214,6 +283,60 @@ export class HistoryService {
       sourceApp: row.source_app || undefined,
       createdAt: row.created_at
     }
+  }
+
+  /**
+   * Insert a new row into prompt_history_fts, keyed by the just-created
+   * prompt_history row's rowid. Application-layer FTS sync — see the note
+   * in migrations/004_history_fts4.sql for why DB triggers aren't used.
+   * No-ops silently if the FTS table doesn't exist (e.g. pre-migration).
+   */
+  private syncFtsInsert(id: string, originalText: string, enhancedText: string): void {
+    if (!this.ftsAvailable()) return
+    try {
+      const row = this.db.prepare('SELECT rowid FROM prompt_history WHERE id = ?').get(id) as
+        { rowid: number } | undefined
+      if (row) {
+        this.db
+          .prepare(
+            'INSERT INTO prompt_history_fts (docid, original_text, enhanced_text) VALUES (?, ?, ?)'
+          )
+          .run(row.rowid, originalText, enhancedText)
+      }
+    } catch (error) {
+      console.warn('[History] Failed to sync FTS index on insert:', error)
+    }
+  }
+
+  /**
+   * Whether the prompt_history_fts virtual table exists in this database.
+   * Cached after first check since the schema doesn't change at runtime.
+   */
+  private ftsAvailable(): boolean {
+    if (this.ftsAvailableCache !== null) return this.ftsAvailableCache
+    try {
+      this.db.prepare('SELECT 1 FROM prompt_history_fts LIMIT 1').get()
+      this.ftsAvailableCache = true
+    } catch {
+      this.ftsAvailableCache = false
+    }
+    return this.ftsAvailableCache
+  }
+
+  /**
+   * Sanitize a raw user search string for safe use in an FTS4 MATCH query.
+   * FTS query syntax treats certain characters (quotes, hyphens at word
+   * start, etc.) specially; wrapping each token in double quotes forces a
+   * literal phrase/token match and avoids FTS query syntax errors on
+   * arbitrary user input.
+   */
+  private sanitizeFtsQuery(raw: string): string {
+    const tokens = raw
+      .trim()
+      .split(/\s+/)
+      .filter((t) => t.length > 0)
+      .map((t) => `"${t.replace(/"/g, '')}"`)
+    return tokens.join(' ')
   }
 }
 

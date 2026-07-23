@@ -9,7 +9,8 @@ import { getSystemPrompt, getUserPromptTemplate } from '../../src/services/promp
 describe('Prompt Enhancer / Cleaner', () => {
   describe('cleanLLMResponse', () => {
     it('should remove conversational introduction strings', () => {
-      const input = 'Sure, here is the enhanced prompt:\n\nCreate a Python script that scrapes headlines.'
+      const input =
+        'Sure, here is the enhanced prompt:\n\nCreate a Python script that scrapes headlines.'
       expect(cleanLLMResponse(input)).toBe('Create a Python script that scrapes headlines.')
     })
 

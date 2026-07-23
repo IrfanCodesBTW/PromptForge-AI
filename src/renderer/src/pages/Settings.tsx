@@ -3,19 +3,30 @@
 // ====================================================
 
 import { useState, useEffect, useCallback } from 'react'
-import { Save, RotateCcw, CheckCircle, Zap, Globe, Keyboard, Palette, Shield } from 'lucide-react'
+import {
+  Save,
+  RotateCcw,
+  CheckCircle,
+  Zap,
+  Globe,
+  Keyboard,
+  Palette,
+  Shield,
+  User
+} from 'lucide-react'
 import { useInvoke } from '../hooks/useIPC'
 import { useAppStore } from '../stores/appStore'
 import { IPC_CHANNELS } from '../../../shared/constants'
 import { showToast } from '../components/ui/Toast'
-import type { ThemeMode } from '../../../shared/types'
+import type { ThemeMode, Persona, PersonaTone } from '../../../shared/types'
 
-type SettingsSection = 'general' | 'providers' | 'hotkeys' | 'appearance' | 'privacy'
+type SettingsSection = 'general' | 'providers' | 'hotkeys' | 'personas' | 'appearance' | 'privacy'
 
 const sections = [
   { id: 'general' as const, label: 'General', icon: Zap },
   { id: 'providers' as const, label: 'Providers', icon: Globe },
   { id: 'hotkeys' as const, label: 'Hotkeys', icon: Keyboard },
+  { id: 'personas' as const, label: 'Personas', icon: User },
   { id: 'appearance' as const, label: 'Appearance', icon: Palette },
   { id: 'privacy' as const, label: 'Privacy', icon: Shield }
 ]
@@ -110,6 +121,7 @@ export function Settings(): JSX.Element {
           {activeSection === 'hotkeys' && (
             <HotkeySettings hotkeys={hotkeys} onReload={loadHotkeys} invoke={invoke} />
           )}
+          {activeSection === 'personas' && <PersonaSettings invoke={invoke} />}
           {activeSection === 'appearance' && (
             <AppearanceSettings settings={settings} onSave={saveSetting} />
           )}
@@ -187,6 +199,30 @@ function GeneralSettings({
         <ToggleSwitch
           checked={settings.clipboard_auto_paste !== 'false'}
           onChange={(checked) => onSave('clipboard_auto_paste', String(checked))}
+        />
+      </SettingsCard>
+
+      <SettingsCard
+        title="Floating Preview Window"
+        description="Show a live streaming preview near your cursor before committing to clipboard (Accept/Reject/Re-run). When off, hotkeys behave as before: instant clipboard write."
+      >
+        <ToggleSwitch
+          checked={settings.preview_window_enabled === 'true'}
+          onChange={(checked) => onSave('preview_window_enabled', String(checked))}
+        />
+      </SettingsCard>
+
+      <SettingsCard
+        title="Refinement Session Timeout"
+        description="Inactivity timeout (in minutes) for in-memory multi-turn prompt refinement sessions before they auto-expire (1–60 mins)."
+      >
+        <input
+          type="number"
+          min="1"
+          max="60"
+          value={settings.refinementSessionTimeoutMinutes || '5'}
+          onChange={(e) => onSave('refinementSessionTimeoutMinutes', e.target.value)}
+          className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none hover:border-text-secondary transition-colors"
         />
       </SettingsCard>
     </div>
@@ -469,6 +505,276 @@ function HotkeySettings({
         )}
       </div>
     </SettingsCard>
+  )
+}
+
+const TONE_OPTIONS: PersonaTone[] = ['professional', 'casual', 'technical', 'creative', 'formal']
+
+function PersonaSettings({
+  invoke
+}: {
+  invoke: <T = unknown>(channel: string, ...args: unknown[]) => Promise<T>
+}) {
+  const [personas, setPersonas] = useState<Persona[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [form, setForm] = useState<{
+    name: string
+    description: string
+    tone: PersonaTone
+    formatRules: string
+    systemPromptInjection: string
+  }>({
+    name: '',
+    description: '',
+    tone: 'professional',
+    formatRules: '',
+    systemPromptInjection: ''
+  })
+
+  const loadPersonas = useCallback(async () => {
+    const list = await invoke<Persona[]>(IPC_CHANNELS.PERSONA_LIST)
+    setPersonas(list)
+    if (!selectedId && list.length > 0) {
+      setSelectedId(list[0].id)
+    }
+  }, [invoke, selectedId])
+
+  useEffect(() => {
+    loadPersonas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const selected = personas.find((p) => p.id === selectedId)
+    if (selected) {
+      setForm({
+        name: selected.name,
+        description: selected.description || '',
+        tone: selected.tone,
+        formatRules: selected.formatRules || '',
+        systemPromptInjection: selected.systemPromptInjection
+      })
+    }
+  }, [selectedId, personas])
+
+  const selectedPersona = personas.find((p) => p.id === selectedId)
+
+  const handleSave = async () => {
+    if (!selectedPersona) return
+    try {
+      await invoke(IPC_CHANNELS.PERSONA_UPDATE, {
+        id: selectedPersona.id,
+        name: form.name,
+        description: form.description,
+        tone: form.tone,
+        formatRules: form.formatRules,
+        systemPromptInjection: form.systemPromptInjection
+      })
+      showToast({ type: 'success', title: 'Persona saved', message: `${form.name} updated` })
+      loadPersonas()
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to save persona' })
+    }
+  }
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await invoke(IPC_CHANNELS.PERSONA_SET_DEFAULT, id)
+      loadPersonas()
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to set default persona' })
+    }
+  }
+
+  const handleDuplicate = async (persona: Persona) => {
+    try {
+      const created = await invoke<Persona>(IPC_CHANNELS.PERSONA_CREATE, {
+        name: `${persona.name} (Copy)`,
+        description: persona.description,
+        tone: persona.tone,
+        formatRules: persona.formatRules,
+        systemPromptInjection: persona.systemPromptInjection
+      })
+      await loadPersonas()
+      setSelectedId(created.id)
+      showToast({ type: 'success', title: 'Persona duplicated', message: created.name })
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to duplicate persona' })
+    }
+  }
+
+  const handleDelete = async (persona: Persona) => {
+    if (persona.isBuiltin) return
+    try {
+      await invoke(IPC_CHANNELS.PERSONA_DELETE, persona.id)
+      setSelectedId(null)
+      await loadPersonas()
+      showToast({ type: 'success', title: 'Persona deleted', message: persona.name })
+    } catch {
+      showToast({ type: 'error', title: 'Error', message: 'Failed to delete persona' })
+    }
+  }
+
+  return (
+    <div className="flex gap-lg">
+      {/* List panel */}
+      <div className="w-56 flex-shrink-0 space-y-xs">
+        {personas.map((persona) => (
+          <button
+            key={persona.id}
+            onClick={() => setSelectedId(persona.id)}
+            className={`w-full text-left px-md py-sm rounded-sm text-sm transition-colors cursor-pointer flex items-center justify-between ${
+              selectedId === persona.id
+                ? 'bg-mint-100 text-text-primary font-medium'
+                : 'text-text-secondary hover:bg-surface-card-hover hover:text-text-primary'
+            }`}
+          >
+            <span>{persona.name}</span>
+            {persona.isDefault && <CheckCircle size={14} className="text-primary" />}
+          </button>
+        ))}
+      </div>
+
+      {/* Editor panel */}
+      <div className="flex-1 space-y-5">
+        {!selectedPersona ? (
+          <SettingsCard
+            title="No persona selected"
+            description="Select a persona from the list to edit it."
+          >
+            <div />
+          </SettingsCard>
+        ) : (
+          <>
+            <SettingsCard
+              title="Identity"
+              description="Name, description, and tone of this persona"
+            >
+              <div className="space-y-md">
+                <div>
+                  <label htmlFor="persona-name" className="text-xs text-text-secondary mb-xs block">
+                    Name
+                  </label>
+                  <input
+                    id="persona-name"
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="persona-description"
+                    className="text-xs text-text-secondary mb-xs block"
+                  >
+                    Description
+                  </label>
+                  <input
+                    id="persona-description"
+                    type="text"
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none"
+                  />
+                </div>
+                <div>
+                  <span className="text-xs text-text-secondary mb-xs block">Tone</span>
+                  <div className="flex gap-xs">
+                    {TONE_OPTIONS.map((tone) => (
+                      <button
+                        key={tone}
+                        onClick={() => setForm((f) => ({ ...f, tone }))}
+                        className={`flex-1 h-8 px-2 rounded-full text-xs capitalize transition-all duration-[160ms] ease-standard cursor-pointer select-none ${
+                          form.tone === tone
+                            ? 'bg-primary text-white'
+                            : 'bg-pill-bg text-text-secondary hover:bg-pill-bg-hover'
+                        }`}
+                      >
+                        {tone}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </SettingsCard>
+
+            <SettingsCard
+              title="Format Rules"
+              description="Free-text formatting guidance for this persona"
+            >
+              <textarea
+                value={form.formatRules}
+                onChange={(e) => setForm((f) => ({ ...f, formatRules: e.target.value }))}
+                rows={3}
+                className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none resize-none"
+              />
+            </SettingsCard>
+
+            <SettingsCard
+              title="System Prompt Injection"
+              description="Injected verbatim as the outer identity/tone frame ahead of the task-specific system prompt"
+            >
+              <textarea
+                value={form.systemPromptInjection}
+                onChange={(e) => setForm((f) => ({ ...f, systemPromptInjection: e.target.value }))}
+                rows={5}
+                className="w-full bg-surface-elevated border border-border rounded-sm px-md py-sm text-sm font-mono text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus-visible:ring-primary focus-visible:outline-none resize-none"
+              />
+            </SettingsCard>
+
+            <SettingsCard
+              title="Live Preview"
+              description="How this persona modifies a sample prompt"
+            >
+              <pre className="whitespace-pre-wrap text-xs font-mono text-text-secondary bg-surface p-md rounded-sm border border-border">
+                {form.systemPromptInjection}
+                {'\n\n---\n\n'}
+                {
+                  'You are an expert prompt engineer. Enhance this prompt: "Write a function that sorts a list."'
+                }
+              </pre>
+            </SettingsCard>
+
+            <SettingsCard
+              title="Actions"
+              description="Set as default, duplicate, or delete this persona"
+            >
+              <div className="flex items-center gap-sm flex-wrap">
+                <div className="flex items-center gap-sm mr-auto">
+                  <span className="text-sm text-text-secondary">Set as Default</span>
+                  <ToggleSwitch
+                    checked={selectedPersona.isDefault}
+                    onChange={() => handleSetDefault(selectedPersona.id)}
+                  />
+                </div>
+                <button
+                  onClick={handleSave}
+                  className="h-9 px-md rounded-sm text-sm bg-primary text-white hover:bg-primary-hover transition-colors cursor-pointer inline-flex items-center gap-xs"
+                >
+                  <Save size={14} />
+                  Save
+                </button>
+                <button
+                  onClick={() => handleDuplicate(selectedPersona)}
+                  className="h-9 px-md rounded-sm text-sm bg-surface-elevated border border-border text-text-primary hover:bg-surface-card-hover transition-colors cursor-pointer"
+                >
+                  Duplicate
+                </button>
+                {!selectedPersona.isBuiltin && (
+                  <button
+                    onClick={() => handleDelete(selectedPersona)}
+                    className="h-9 px-md rounded-sm text-sm text-error hover:bg-surface-card-hover transition-colors cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </SettingsCard>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 

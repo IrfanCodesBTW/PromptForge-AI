@@ -11,6 +11,8 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { initDatabaseAsync } from '../services/db/database'
 import { APP_NAME } from '../shared/constants'
 import { initializeCrashReporter, handleRendererCrashes } from './crashReporter'
+import { closePreviewWindow } from './windows/previewWindow'
+import { closeHistoryWindow } from './windows/historyWindow'
 
 // Initialize native crash reporting and exceptions interception
 initializeCrashReporter()
@@ -98,7 +100,7 @@ if (!gotTheLock) {
     mainWindow = createMainWindow()
 
     // Setup system tray
-    setupTray(mainWindow)
+    setupTray(mainWindow, db)
 
     // Initialize hotkey manager
     hotkeyManager = new HotkeyManager(db, mainWindow)
@@ -127,4 +129,6 @@ app.on('will-quit', () => {
   if (hotkeyManager) {
     hotkeyManager.unregisterAll()
   }
+  closePreviewWindow()
+  closeHistoryWindow()
 })

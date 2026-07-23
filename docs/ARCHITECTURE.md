@@ -512,3 +512,171 @@ Users can add templates by dropping `.hbs` files into the templates directory or
 | Testing | Vitest (unit), Playwright (e2e) |
 | Build | electron-builder (cross-platform packaging) |
 | Language | TypeScript 5.x (strict mode) throughout |
+
+
+---
+
+## 10. Floating Preview Window (v1.5)
+
+### Overview
+
+The Floating Preview Window is a second, independent `BrowserWindow` spawned by the `HotkeyManager` when the `preview_window_enabled` setting is on. It streams the live enhancement output near the user's cursor and lets the user Accept, Reject, or Re-run before anything is written to the clipboard. When the setting is off, hotkeys fall back to the original V1 instant-clipboard behavior unchanged.
+
+Key design points (matching the actual implementation, not aspirational):
+
+- **Window**: `src/main/windows/previewWindow.ts` creates a `BrowserWindow` with `alwaysOnTop: true`, `skipTaskbar: true`, `frame: false`, `transparent: true`, `resizable: false`, sized 420×280, positioned at `screen.getCursorScreenPoint()` + 16px on both axes. It auto-dismisses on blur (focus loss) or explicit close, and is reused (repositioned, not recreated) across Re-run.
+- **Isolation**: The preview window loads a dedicated renderer bundle (`src/renderer/preview/`, built as a separate Vite entry point in `electron.vite.config.ts`) with its own `PreviewApp.tsx`. The main application window has zero code path that references the preview window — all lifecycle and streaming orchestration lives in `HotkeyManager`.
+- **Streaming source**: `HotkeyManager` calls `PromptEngine.enhanceStream()` (added in the Phase 1 Streaming Infrastructure work) and forwards each `TokenChunk` to the preview window via `previewWindow.ts`'s `sendTokenChunk()`/`sendStreamDone()`/`sendStreamError()` helpers over dedicated IPC channels.
+- **Hybrid fallback**: If the active provider can't stream (or the stream fails mid-flight), `ProviderRouter.streamWithFallback()` transparently falls back to a normal `complete()` call. The preview UI shows a subtle "Streaming unavailable — displaying completed response" notice rather than an error, and still renders the full result.
+- **Actions own the clipboard write**: Unlike V1, the clipboard is untouched until the user explicitly Accepts. `HotkeyManager.handlePreviewAccept()`/`handlePreviewReject()`/`handlePreviewRerun()` are invoked via IPC from the preview renderer and manage a small in-memory `pendingPreview` state (input text, mode, latest streamed text) — nothing is persisted beyond the existing history write that already happens inside `enhanceStream()`.
+- **Feature flag**: Controlled by the `preview_window_enabled` setting (Settings → General → "Floating Preview Window"), defaulting to off for the initial rollout so existing users' instant-clipboard workflow is unaffected until they opt in.
+
+### Sequence Diagram — Token Streaming Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant OS
+    participant HotkeyManager
+    participant PreviewWindow as previewWindow.ts
+    participant PreviewApp as Preview Renderer
+    participant Engine as PromptEngine
+    participant Router as ProviderRouter
+    participant Provider as AIProvider (Ollama/Groq/OpenAI)
+
+    User->>OS: Press Ctrl+Shift+E (preview_window_enabled = true)
+    OS->>HotkeyManager: Trigger Shortcut Event
+    HotkeyManager->>OS: Copy Selected Text (Ctrl+C Simulation)
+    OS-->>HotkeyManager: selected text
+    HotkeyManager->>PreviewWindow: getOrCreatePreviewWindow()
+    PreviewWindow->>PreviewApp: load preview/index.html near cursor
+    HotkeyManager->>Engine: enhanceStream(text, mode)
+    Engine->>Router: streamWithFallback(userPrompt, systemPrompt)
+    Router->>Provider: completeStream() [if implemented]
+
+    loop each token chunk
+        Provider-->>Router: TokenChunk
+        Router-->>Engine: TokenChunk
+        Engine-->>HotkeyManager: EnhanceStreamChunk
+        HotkeyManager->>PreviewWindow: sendTokenChunk(chunk)
+        PreviewWindow->>PreviewApp: IPC preview:token-chunk
+        PreviewApp->>User: append token, blinking cursor
+    end
+
+    alt streaming failed or unsupported
+        Router->>Provider: complete() (non-streaming fallback)
+        Provider-->>Router: full CompletionResult
+        Router-->>Engine: synthetic done chunk (isFallback)
+        Engine-->>HotkeyManager: final EngineResult (usedStreamFallback: true)
+    else streaming succeeded
+        Engine-->>HotkeyManager: final EngineResult
+    end
+
+    Engine->>Engine: write to prompt_history (HistoryService)
+    HotkeyManager->>PreviewWindow: sendStreamDone(result)
+    PreviewWindow->>PreviewApp: IPC preview:stream-done
+    PreviewApp->>User: enable Accept, show provider/latency pill
+
+    alt User clicks Accept (or presses Enter)
+        PreviewApp->>HotkeyManager: IPC preview:accept
+        HotkeyManager->>OS: write to clipboard (+ optional auto-paste)
+        HotkeyManager->>PreviewWindow: closePreviewWindow()
+    else User clicks Reject (or presses Escape)
+        PreviewApp->>HotkeyManager: IPC preview:reject
+        HotkeyManager->>PreviewWindow: closePreviewWindow() (no clipboard write)
+    else User clicks Re-run (or presses Ctrl+R)
+        PreviewApp->>HotkeyManager: IPC preview:rerun
+        HotkeyManager->>Engine: enhanceStream(same text, same mode)
+        Note over PreviewApp: text cleared, loop repeats from step 8
+    end
+```
+
+### IPC Channels
+
+| Channel | Direction | Payload |
+|---|---|---|
+| `promptforge:preview:token-chunk` | Main → Renderer | `{ text, done, provider, isFallback }` |
+| `promptforge:preview:stream-done` | Main → Renderer | `{ enhanced, provider, model, tokensUsed, latencyMs, historyId, usedStreamFallback }` |
+| `promptforge:preview:stream-error` | Main → Renderer | `{ code, message }` |
+| `promptforge:preview:accept` | Renderer → Main | — |
+| `promptforge:preview:reject` | Renderer → Main | — |
+| `promptforge:preview:rerun` | Renderer → Main | — |
+
+---
+
+## 11. Multi-Turn Refinement Loop (v1.5)
+
+### Overview
+
+The Multi-Turn Refinement Loop enables users to iteratively refine an enhanced prompt using natural language instructions directly inside the preview window before accepting the final version.
+
+Key architectural design points:
+
+- **In-Memory Session Manager**: Managed by `RefinementSessionManager` (`src/services/refinementSession.ts`). Sessions hold active conversation context (`originalText`, `currentOutput`, `turns: RefinementTurn[]`, `mode`, `provider`) and automatically expire after a configurable inactivity duration (default 5 minutes).
+- **Sub-800 Token Prompt Budgeting**: System and user prompts for refinement turns assemble original context, previous turn history, user instructions, and active persona injection (`PersonaService`) within a tight sub-800 token budget.
+- **Provider Streaming**: Utilizes Phase 1's `ProviderRouter.streamWithFallback()` for real-time incremental token streaming (`promptforge:refinement:token-chunk`).
+- **Interactive UI**: Embedded 36px input bar in `PreviewApp.tsx` with turn history thread visualization. "Use as Base" in the Ctrl+Shift+H history picker initializes a new refinement session from past history entries.
+
+### Sequence Diagram — Multi-Turn Refinement Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant PreviewApp as Preview Renderer
+    participant Handlers as Main IPC Handlers
+    participant Manager as RefinementSessionManager
+    participant Session as RefinementSession
+    participant Router as ProviderRouter
+
+    User->>PreviewApp: Types refinement instruction & presses Enter
+    PreviewApp->>Handlers: IPC promptforge:refinement:send-instruction
+    Handlers->>Manager: getSession(sessionId)
+    Manager-->>Handlers: RefinementSession instance
+    Handlers->>Session: refine(instruction)
+    Session->>Router: streamWithFallback(userPrompt, systemPrompt)
+
+    loop each token chunk
+        Router-->>Session: TokenChunk
+        Session-->>Handlers: EnhanceStreamChunk
+        Handlers->>PreviewApp: IPC promptforge:refinement:token-chunk
+        PreviewApp->>User: Update live token display
+    end
+
+    Session-->>Handlers: EngineResult
+    Handlers->>PreviewApp: IPC promptforge:refinement:done
+    PreviewApp->>User: Append turn to conversation thread
+```
+
+All channels are registered in `IPC_CHANNELS` (`src/shared/constants.ts`), whitelisted in the preload bridge (`src/preload/index.ts`), and the accept/reject/rerun handlers are wired in `src/main/ipc/handlers.ts`, delegating to `HotkeyManager`.
+
+---
+
+## 12. Persona Profiles System (v1.5)
+
+### Overview
+
+The Persona Profiles system enables users to define custom prompt identities (`personas` table in SQLite) that inject structured constraints (tone, format rules, system prompt injection) into every prompt enhancement.
+
+Key architectural design points:
+
+- **System Prompt Composition**: Formatted as `[persona.systemPromptInjection] + '\n\n---\n\n' + [template/mode system prompt]`. Persona provides the outer identity/tone frame, while mode/template provides the task layer.
+- **Opt-Out Flag**: Preserves pre-Persona behavior for built-in templates (`persona_override_allowed = 0`), while allowing user templates to toggle persona overrides (`DEFAULT 1`).
+- **Tray Menu Integration**: Dynamic system tray "Persona" radio-item submenu allowing single-click switching of default persona.
+- **Application-Layer Transactional Guarantees**: Single-default persona enforcement is managed in `PersonaService` using explicit SQL transactions (`UPDATE personas SET is_default = 0; UPDATE personas SET is_default = 1 WHERE id = ?`).
+
+---
+
+## 13. Smart History Stack & FTS4 Search (v1.5)
+
+### Overview
+
+Smart History Search combines an inverted index SQLite FTS4 virtual table (`prompt_history_fts`) with a lightweight quick picker popup window (`Ctrl+Shift+H`) and side-by-side diff visualization.
+
+Key architectural design points:
+
+- **FTS4 Inverted Index**: `CREATE VIRTUAL TABLE prompt_history_fts USING fts4(original_text, enhanced_text, content='prompt_history')`. Full-text queries use SQLite `MATCH` syntax with term-frequency ranking.
+- **Application-Layer Sync**: FTS index synchronization (insert, delete, restore) is executed inside `HistoryService` within database transactions.
+- **Quick Picker Popup**: Frameless `560×480px` window (`src/main/windows/historyWindow.ts`) with debounced search, matched term highlighting (`<mark>`), 4-second undo toast, and keyboard navigation.
+- **Unified Search Backend**: Both the `Ctrl+Shift+H` popup and main in-app History tab share the exact same `HistoryService.getRecentHistory()` backend method.
