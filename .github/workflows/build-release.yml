@@ -40,15 +40,48 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Verify Required Build Resources
+        shell: bash
+        run: |
+          node -e '
+            const fs = require("fs");
+            const required = [
+              "resources/icon.png",
+              "resources/icon.ico",
+              "resources/icon.icns",
+              "resources/installer-banner.png"
+            ];
+            const missing = required.filter(f => !fs.existsSync(f));
+            if (missing.length > 0) {
+              console.error("Missing required build resource files:", missing);
+              process.exit(1);
+            }
+            console.log("All required resource files verified successfully.");
+          '
+
       - name: Compile Code
         run: npm run build
 
       - name: Package Application Installers
-        run: npm run package
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            npm run package:win
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            npm run package:mac
+          else
+            npm run package:linux
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # APPLE_ID: ${{ secrets.APPLE_ID }}
           # APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+
+      - name: Debug - List Build Outputs
+        shell: bash
+        run: |
+          echo "=== Contents of dist directory ==="
+          ls -la dist/
 
       - name: Generate CycloneDX SBOM (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
@@ -60,6 +93,7 @@ jobs:
           tag_name: ${{ github.event.inputs.tag_name || github.event.release.tag_name }}
           files: |
             dist/*.exe
+            dist/*.zip
             dist/*.dmg
             dist/*.deb
             dist/*.snap
