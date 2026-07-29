@@ -5,6 +5,26 @@ All notable changes to PromptForge AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v2.0.1...promptforge-ai-v3.0.0) (2026-07-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* none -- preview window is feature-flagged off by default
+
+### Features
+
+* dynamic model selection, interactive hotkey recording, clean responses, and provider fixes ([3c220c6](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/3c220c64a42b54c1c61ed46c3786aed77c2dde97))
+* trigger initial automated release ([616802e](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/616802e5e8b684b1c55c7726045fab949ba744d8))
+* v1.5.0 Intelligence release -- floating preview window, persona profiles, smart history FTS4, multi-turn refinement ([2970ab2](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/2970ab2662879b7a11b8cdece13b780d97ee206c))
+
+
+### Bug Fixes
+
+* correct electron-builder publish repo details and skip auto-publish ([9c7f95a](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/9c7f95a6b9ddd050ba67f9dc8877e2d5a22e585b))
+* remove strict knip dependency checks from CI pipeline ([6083581](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/6083581e773d7c3b8ac63ee877968e861bd15ada))
+* resolve CI failures and release workflow issues ([ca09c1a](https://github.com/IrfanCodesBTW/PromptForge-AI/commit/ca09c1a35a1931b7013242f1f25f0e4d15077803))
+
 ## [2.0.1] - 2026-07-29
 
 ### Features & Enhancements
