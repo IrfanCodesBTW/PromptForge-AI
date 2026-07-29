@@ -7,10 +7,10 @@ export function Titlebar(): JSX.Element {
       <div className="flex items-center gap-sm px-lg">
         <Logo size={18} />
         <span className="text-sm font-bold text-text-primary tracking-tight">
-          PromptForge <span className="text-[#8B5CF6]">AI</span>
+          PromptForge <span className="text-[#2563EB]">AI</span>
         </span>
         <span className="text-[10px] font-semibold text-text-muted px-1.5 py-0.5 rounded bg-surface-card-hover border border-border/50">
-          v1.5.0
+          v2.0.1
         </span>
       </div>
       <div className="titlebar-no-drag flex items-center h-full">

@@ -5,6 +5,19 @@ All notable changes to PromptForge AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-07-29
+
+### Features & Enhancements
+* **Custom Thunder Blue & White Brand Refresh**: Implemented new Thunder Blue (`#2563EB`) primary accent theme across all application surfaces, brand monograms, and UI highlights.
+* **Redesigned High-Resolution Icon Set**:
+  * **Primary App Icon**: Delivered 1024×1024 px PNG & master vector SVG for home screen and desktop app launchers.
+  * **Secondary Mini Icon**: Delivered 512×512 px PNG & master vector SVG for dock and system tray.
+  * **System Tray Status Icon**: 16×16 px solid opaque icon with a 1-pixel border (`#000000`) and 4-color palette compliance (`#FFFFFF`, `#000000`, `#2563EB`, `#0F172A`) per Windows system tray guidelines.
+
+### Bug Fixes
+* **Titlebar Control Mismatch**: Fixed hardcoded `#0F1419` dark box in Electron `titleBarOverlay` to match the default White Theme (`#FFFFFF`).
+* **Tray Icon Loading**: Improved system tray asset resolution fallback chain across development and production environments.
+
 ## [2.0.0](https://github.com/IrfanCodesBTW/PromptForge-AI/compare/promptforge-ai-v1.2.1...promptforge-ai-v2.0.0) (2026-07-23)
 
 

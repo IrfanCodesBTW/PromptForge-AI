@@ -15,7 +15,7 @@ export function Sidebar(): JSX.Element {
         <Logo size={26} />
         <div>
           <h1 className="text-sm font-bold text-text-primary leading-none tracking-tight">
-            PromptForge <span className="text-[#8B5CF6]">AI</span>
+            PromptForge <span className="text-[#2563EB]">AI</span>
           </h1>
           <p className="text-[9px] text-text-muted mt-1 leading-tight font-medium">
             Forge Better Prompts. Get Better Results.

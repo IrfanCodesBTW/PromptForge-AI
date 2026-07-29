@@ -9,7 +9,6 @@ directories:
 files:
   - out/**/*
   - "!out/**/*.map"
-  - resources/icon.png
 
 extraResources:
   - from: templates
@@ -23,29 +22,23 @@ win:
       arch: [x64]
     - target: zip
       arch: [x64]
-  icon: resources/icon.ico
 
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
   shortcutName: PromptForge AI
-  installerHeaderIcon: resources/icon.ico
-  installerImage: resources/installer-banner.png
-  uninstallerIcon: resources/icon.ico
 
 mac:
   target:
     - target: dmg
       arch: [x64, arm64]
-  icon: resources/icon.icns
   category: public.app-category.productivity
 
 linux:
   target:
     - target: AppImage
       arch: [x64]
-  icon: resources/icon.png
   category: Utility
 
 publish:

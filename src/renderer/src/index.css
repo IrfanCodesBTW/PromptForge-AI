@@ -8,12 +8,57 @@
    ==================================================== */
 
 :root {
-  /* Wispr-Flow-inspired light (new default) */
+  /* Predominantly White Theme with Thunder Blue Accents */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff; /* Clean white canvas & sidebar */
+  --color-surface-elevated: #f8fafc; /* Raised card surface */
+  --color-surface-card-hover: #f1f5f9;
+  --color-primary: #2563eb; /* Thunder Blue — primary action & thunder icon color */
+  --color-primary-hover: #1d4ed8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-border: #e2e8f0;
+
+  /* Additional colors/tokens */
+  --color-mint-100: #eff6ff; /* Soft Thunder Blue highlight */
+  --color-lavender-bg: #dbeafe;
+  --color-lavender-text: #1e40af;
+  --color-disabled-bg: #f1f5f9;
+  --color-disabled-text: #94a3b8;
+  --color-pill-bg: #f8fafc;
+  --color-pill-bg-hover: #f1f5f9;
+
+  /* Diff highlight tokens */
+  --color-success-highlight: #d1fae5;
+  --color-error-highlight: #fee2e2;
+  --color-primary-highlight: #dbeafe;
+
+  /* Official Brand Tokens (Thunder Blue + White) */
+  --brand-primary: #2563eb;
+  --brand-secondary: #1d4ed8;
+  --brand-background: #ffffff;
+  --brand-slate: #f8fafc;
+  --brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --brand-surface: #ffffff;
+  --brand-icon: #2563eb;
+
+  /* Typography */
+  --font-serif: 'GT Sectra', 'Tiempos Headline', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+[data-theme='dark'] {
+  /* Wispr-Flow-inspired dark theme variant */
   --color-bg: #f7f4ec;
-  --color-surface: #f7f4ec; /* sidebar/canvas now match, per layout.md */
+  --color-surface: #f7f4ec; /* sidebar/canvas match */
   --color-surface-elevated: #ffffff; /* cards */
   --color-surface-card-hover: #efebe0;
-  --color-primary: #2f4f42; /* forest — replaces old blue */
+  --color-primary: #2f4f42; /* forest primary */
   --color-primary-hover: #254036;
   --color-success: #4f8a66;
   --color-warning: #c98a2b;
@@ -23,7 +68,7 @@
   --color-text-muted: #847d70;
   --color-border: #e8e3d6;
 
-  /* Additional colors/tokens from tokens.json */
+  /* Additional colors/tokens */
   --color-mint-100: #e4f0e7;
   --color-lavender-bg: #e9e1fa;
   --color-lavender-text: #5b3fa0;
@@ -32,55 +77,19 @@
   --color-pill-bg: #f1ede3;
   --color-pill-bg-hover: #e8e3d6;
 
-  /* Diff highlight tokens (Smart History diff view, v1.5) */
+  /* Diff highlight tokens */
   --color-success-highlight: #d5ecdc;
   --color-error-highlight: #fbdcd9;
   --color-primary-highlight: #dcecdf;
 
-  /* Official Brand Tokens (PromptForge AI) */
-  --brand-primary: #3b82f6;
-  --brand-secondary: #8b5cf6;
-  --brand-background: #0b1220;
-  --brand-slate: #1e293b;
-  --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  --brand-surface: #0b1220;
+  /* Official Brand Tokens */
+  --brand-primary: #2f4f42;
+  --brand-secondary: #254036;
+  --brand-background: #f7f4ec;
+  --brand-slate: #efebe0;
+  --brand-gradient: linear-gradient(135deg, #2f4f42 0%, #254036 100%);
+  --brand-surface: #f7f4ec;
   --brand-icon: #ffffff;
-
-  /* Typography */
-  --font-serif: 'GT Sectra', 'Tiempos Headline', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-}
-
-[data-theme='dark'] {
-  /* Dark mode variant matching forest accent and cream base */
-  --color-bg: #1c1b17;
-  --color-surface: #1c1b17;
-  --color-surface-elevated: #262420;
-  --color-surface-card-hover: #2b2925;
-  --color-primary: #7fb897; /* lighter forest for dark-mode contrast */
-  --color-primary-hover: #96c9aa;
-  --color-success: #4f8a66;
-  --color-warning: #c98a2b;
-  --color-error: #d9483f;
-  --color-text-primary: #f3f0e8;
-  --color-text-secondary: #b8b2a5;
-  --color-text-muted: #8c8676;
-  --color-border: #38362f;
-
-  /* Dark mode equivalent additional colors */
-  --color-mint-100: #254036;
-  --color-lavender-bg: #3e2f5d;
-  --color-lavender-text: #c1b5e3;
-  --color-disabled-bg: #2b2925;
-  --color-disabled-text: #706b62;
-  --color-pill-bg: #2b2925;
-  --color-pill-bg-hover: #3d3930;
-
-  /* Diff highlight tokens (Smart History diff view, v1.5) — dark mode */
-  --color-success-highlight: #1f3327;
-  --color-error-highlight: #3a2422;
-  --color-primary-highlight: #223a2e;
 }
 
 /* ---- Base Resets ---- */

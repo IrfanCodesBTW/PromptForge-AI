@@ -10,7 +10,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](#installation)
-[![Version](https://img.shields.io/badge/Version-1.5.0-orange.svg)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.0.1-orange.svg)](./docs/CHANGELOG.md)
 [![Brand Guidelines](https://img.shields.io/badge/Brand-Guidelines-purple.svg)](./docs/BRANDING.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet.svg)](./docs/CONTRIBUTING.md)
 

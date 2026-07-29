@@ -33,8 +33,8 @@ function createMainWindow(): BrowserWindow {
     frame: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#0F1419',
-      symbolColor: '#F1F5F9',
+      color: '#ffffff',
+      symbolColor: '#0f172a',
       height: 36
     },
     webPreferences: {

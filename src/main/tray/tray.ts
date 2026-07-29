@@ -16,16 +16,29 @@ export function setupTray(mainWindow: BrowserWindow, db: DatabaseWrapper): void 
   cachedMainWindow = mainWindow
   cachedDb = db
 
-  // Create a simple tray icon (16x16)
-  // In production, use a proper icon from resources/
-  const iconPath = join(__dirname, '../../../resources/icon.png')
-  let icon: Electron.NativeImage
+  // Robust path resolution for 16x16 system tray icon
+  const candidatePaths = [
+    join(app.getAppPath(), 'resources/tray-minimized.png'),
+    join(app.getAppPath(), 'resources/tray-dark.png'),
+    join(app.getAppPath(), 'resources/icon.png'),
+    join(__dirname, '../../resources/tray-minimized.png'),
+    join(__dirname, '../../../resources/tray-minimized.png'),
+    join(__dirname, '../../../resources/icon.png')
+  ]
 
-  try {
-    icon = nativeImage.createFromPath(iconPath)
-  } catch {
-    // Fallback: create a simple colored square icon
-    icon = nativeImage.createEmpty()
+  let icon: Electron.NativeImage = nativeImage.createEmpty()
+
+  for (const candidate of candidatePaths) {
+    try {
+      const img = nativeImage.createFromPath(candidate)
+      if (!img.isEmpty()) {
+        icon = img
+        console.log('[Tray] Successfully loaded tray icon from:', candidate)
+        break
+      }
+    } catch {
+      // Continue to next candidate
+    }
   }
 
   tray = new Tray(icon.isEmpty() ? createFallbackIcon() : icon)
